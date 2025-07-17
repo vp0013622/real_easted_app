@@ -1,0 +1,518 @@
+// ignore_for_file: prefer_final_fields
+
+
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
+import 'package:inhabit_realties/constants/contants.dart';
+import 'package:inhabit_realties/constants/initalAssigner.dart';
+import 'package:inhabit_realties/controllers/auth/authController.dart';
+import 'package:inhabit_realties/controllers/role/roleController.dart';
+import 'package:inhabit_realties/controllers/user/userController.dart';
+import 'package:inhabit_realties/models/auth/UsersModel.dart';
+import 'package:inhabit_realties/models/role/RolesModel.dart';
+import 'package:inhabit_realties/pages/widgets/appSnackBar.dart';
+import 'package:inhabit_realties/pages/widgets/formTextField.dart';
+import 'package:inhabit_realties/providers/register_page_provider.dart';
+
+class EditUserPage extends StatefulWidget {
+  const EditUserPage({super.key});
+
+  @override
+  State<EditUserPage> createState() => _EditUserPageState();
+}
+
+class _EditUserPageState extends State<EditUserPage> {
+  // Add these constants at the class level for consistent styling
+  static const double _formPadding = 10.0;
+  static const double _formTopPadding = 10.0;
+  static const double _formBottomPadding = 10.0;
+  static const EdgeInsets _fieldPadding = EdgeInsets.only(
+    top: 20,
+    left: 15,
+    right: 15,
+  );
+  static const EdgeInsets _dropdownContentPadding = EdgeInsets.symmetric(
+    horizontal: 15,
+    vertical: 15,
+  );
+  static const BorderRadius _borderRadius = BorderRadius.all(
+    Radius.circular(10.0),
+  );
+
+  // Add these constants for consistent styling
+  static const double _sectionSpacing = 25.0;
+  static const double _headerSpacing = 15.0;
+  static const EdgeInsets _sectionPadding = EdgeInsets.only(
+    bottom: _sectionSpacing,
+  );
+
+  UsersModel? user;
+  final AuthController _authController = AuthController();
+  final UserController _userController = UserController();
+  final RoleController _rolesController = RoleController();
+  final _formKey = GlobalKey<FormState>();
+
+  final TextEditingController _id = TextEditingController();
+  final TextEditingController _roleId = TextEditingController();
+  final TextEditingController _email = TextEditingController();
+  final TextEditingController _firstName = TextEditingController();
+  final TextEditingController _lastName = TextEditingController();
+  final TextEditingController _phoneNumber = TextEditingController();
+  final TextEditingController _password = TextEditingController();
+
+  String? selectedRoleId;
+  bool selectedPublishedOrNot = true;
+  List<RolesModel> roles = [];
+  bool isLoading = false;
+  bool _initialized = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialized) {
+      user = ModalRoute.of(context)!.settings.arguments as UsersModel;
+      _initialized = true;
+      _loadInitialData();
+    }
+  }
+
+  Future<void> _loadInitialData() async {
+    setState(() => isLoading = true);
+    await Future.wait([getAllRoles(), setDetails()]);
+    setState(() => isLoading = false);
+  }
+
+  Future<void> getAllRoles() async {
+    try {
+      final response = await _rolesController.getAllRoles();
+      if (!mounted) return;
+
+      if (response['statusCode'] == 200) {
+        final data = response['data'];
+        if (data != null && data.isNotEmpty) {
+          setState(() {
+            roles = List<RolesModel>.from(
+              data.map((item) => RolesModel.fromJson(item)),
+            );
+          });
+        }
+      } else {
+        AppSnackBar.showSnackBar(
+          context,
+          'Error',
+          response['message'] ?? RegisterPageProvider.loadRolesError,
+          ContentType.failure,
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      AppSnackBar.showSnackBar(
+        context,
+        'Error',
+        RegisterPageProvider.loadRolesError,
+        ContentType.failure,
+      );
+    }
+  }
+
+  Future<void> setDetails() async {
+    if (user != null) {
+      _id.text = user?.id ?? "";
+      _roleId.text = user?.role ?? "";
+      _email.text = user!.email;
+      _firstName.text = user?.firstName ?? "";
+      _lastName.text = user?.lastName ?? "";
+      _phoneNumber.text = user?.phoneNumber ?? "";
+      _password.text = "";
+      selectedPublishedOrNot = user?.published ?? false;
+      selectedRoleId = user?.role ?? "";
+    } else {
+      Navigator.pop(context);
+    }
+  }
+
+  Future<void> _handleSubmit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => isLoading = true);
+    try {
+      final response = await _userController.editUser(
+        user!.id,
+        _roleId.text.trim(),
+        _email.text.trim(),
+        await InitalAssigner.generateInitial(_firstName.text.trim()),
+        await InitalAssigner.generateInitial(_lastName.text.trim()),
+        _phoneNumber.text.trim(),
+        _password.text.trim().isEmpty ? '' : _password.text.trim(),
+        selectedPublishedOrNot,
+      );
+
+      if (!mounted) return;
+
+      if (response['statusCode'] == 200) {
+        AppSnackBar.showSnackBar(
+          context,
+          'Success',
+          response['message'] ?? 'User updated successfully',
+          ContentType.success,
+        );
+        Navigator.pushReplacementNamed(context, '/users');
+      } else {
+        AppSnackBar.showSnackBar(
+          context,
+          'Error',
+          response['message'] ?? 'Failed to update user',
+          ContentType.failure,
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      AppSnackBar.showSnackBar(
+        context,
+        'Error',
+        'Failed to update user',
+        ContentType.failure,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
+    }
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: _headerSpacing),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 24,
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBasicInfoSection() {
+    return Padding(
+      padding: _sectionPadding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('Basic Information'),
+          _buildDropdownField(
+            labelText: RegisterPageProvider.role,
+            prefixIcon: Icons.security_outlined,
+            child: DropdownButtonFormField<String>(
+              decoration: InputDecoration(
+                labelText: RegisterPageProvider.role,
+                prefixIcon: const Icon(
+                  Icons.security_outlined,
+                  color: AppColors.greyColor,
+                ),
+              ),
+              value: selectedRoleId,
+              items:
+                  roles.map((role) {
+                    return DropdownMenuItem<String>(
+                      value: role.id,
+                      child: Text(
+                        role.name,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    );
+                  }).toList(),
+              onChanged:
+                  isLoading
+                      ? null
+                      : (value) {
+                        if (value != null) {
+                          setState(() {
+                            selectedRoleId = value;
+                            _roleId.text = value;
+                          });
+                        }
+                      },
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return RegisterPageProvider.roleValidationMessage;
+                }
+                return null;
+              },
+            ),
+          ),
+          FormTextField(
+            textEditingController: _email,
+            labelText: RegisterPageProvider.email,
+            prefixIcon: CupertinoIcons.mail,
+            enabled: !isLoading,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return RegisterPageProvider.emailValidationMessage;
+              }
+              final bool emailValid = RegExp(
+                r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
+              ).hasMatch(value);
+              if (!emailValid) {
+                return RegisterPageProvider.emailValidationMessage;
+              }
+              return null;
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPersonalInfoSection() {
+    return Padding(
+      padding: _sectionPadding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('Personal Information'),
+          FormTextField(
+            textEditingController: _firstName,
+            labelText: RegisterPageProvider.firstName,
+            prefixIcon: CupertinoIcons.person,
+            enabled: !isLoading,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return RegisterPageProvider.firstNameValidationMessage;
+              }
+              return null;
+            },
+          ),
+          FormTextField(
+            textEditingController: _lastName,
+            labelText: RegisterPageProvider.lastName,
+            prefixIcon: CupertinoIcons.person,
+            enabled: !isLoading,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return RegisterPageProvider.lastNameValidationMessage;
+              }
+              return null;
+            },
+          ),
+          FormTextField(
+            textEditingController: _phoneNumber,
+            labelText: RegisterPageProvider.phoneNumber,
+            prefixIcon: CupertinoIcons.phone,
+            enabled: !isLoading,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return RegisterPageProvider.phoneNumberValidationMessage;
+              }
+              final bool phoneValid = RegExp(
+                r'^\+?[0-9]{7,15}$',
+              ).hasMatch(value);
+              if (!phoneValid) {
+                return RegisterPageProvider.phoneNumberValidationMessage;
+              }
+              return null;
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSecuritySection() {
+    return Padding(
+      padding: _sectionPadding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('Security'),
+          FormTextField(
+            textEditingController: _password,
+            labelText: RegisterPageProvider.password,
+            prefixIcon: CupertinoIcons.lock,
+            suffixIcon: CupertinoIcons.eye,
+            obscureText: true,
+            enabled: !isLoading,
+          ),
+          _buildDropdownField(
+            labelText: 'Status',
+            prefixIcon: Icons.label_important_outline,
+            child: DropdownButtonFormField<bool>(
+              decoration: const InputDecoration(
+                labelText: 'Status',
+                prefixIcon: Icon(
+                  Icons.label_important_outline,
+                  color: AppColors.greyColor,
+                ),
+              ),
+              value: selectedPublishedOrNot,
+              items: [
+                DropdownMenuItem(
+                  value: true,
+                  child: Text(
+                    'Published',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
+                DropdownMenuItem(
+                  value: false,
+                  child: Text(
+                    'Unpublished',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
+              ],
+              onChanged:
+                  isLoading
+                      ? null
+                      : (value) {
+                        if (value != null) {
+                          setState(() {
+                            selectedPublishedOrNot = value;
+                          });
+                        }
+                      },
+              validator: (value) {
+                if (value == null) {
+                  return 'Status is required';
+                }
+                return null;
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    return Container(
+      height: 50,
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(vertical: 20, horizontal: 15),
+      child: ElevatedButton(
+        onPressed: isLoading ? null : _handleSubmit,
+        style: ElevatedButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          elevation: 2,
+        ),
+        child:
+            isLoading
+                ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppColors.darkWhiteText,
+                    ),
+                  ),
+                )
+                : Text(
+                  RegisterPageProvider.saveChanges,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+      ),
+    );
+  }
+
+  Widget _buildDropdownField({
+    required String labelText,
+    required IconData prefixIcon,
+    required Widget child,
+  }) {
+    return Padding(
+      padding: _fieldPadding,
+      child: Theme(
+        data: Theme.of(context).copyWith(
+          inputDecorationTheme: const InputDecorationTheme(
+            contentPadding: _dropdownContentPadding,
+            border: OutlineInputBorder(borderRadius: _borderRadius),
+          ),
+        ),
+        child: child,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor =
+        isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final cardBackgroundColor =
+        isDark ? AppColors.darkCardBackground : AppColors.lightCardBackground;
+
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: backgroundColor,
+          appBar: AppBar(
+            title: Text(RegisterPageProvider.editTitle),
+            backgroundColor: cardBackgroundColor,
+            elevation: 0,
+            centerTitle: true,
+          ),
+          body: SafeArea(
+            child: Form(
+              key: _formKey,
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Container(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 20,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildBasicInfoSection(),
+                      _buildPersonalInfoSection(),
+                      _buildSecuritySection(),
+                      _buildSubmitButton(),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (isLoading)
+          Container(
+            color: Colors.black.withOpacity(0.3),
+            child: const Center(child: CircularProgressIndicator()),
+          ),
+      ],
+    );
+  }
+
+  @override
+  void dispose() {
+    _id.dispose();
+    _roleId.dispose();
+    _email.dispose();
+    _firstName.dispose();
+    _lastName.dispose();
+    _phoneNumber.dispose();
+    _password.dispose();
+    super.dispose();
+  }
+}

@@ -1,0 +1,105 @@
+import '../config/environment.dart';
+
+class ApiUrls {
+  static String get baseUrl => EnvironmentConfig.baseUrl;
+
+  //auth
+  static String get checkAuth => '$baseUrl/auth/check';
+  static String get login => '$baseUrl/auth/login';
+
+  //users
+  static String get register => '$baseUrl/users/register';
+  static String get editUser => '$baseUrl/users/edit/';
+  static String get getAllUsers => '$baseUrl/users';
+  static String get getAllUsersWithParams => '$baseUrl/users/withparams';
+  static String get getUserById => '$baseUrl/users/';
+  static String get changePassword => '$baseUrl/users/change-password';
+
+  //roles
+  static String get getAllRoles => '$baseUrl/roles';
+
+  //file
+  static String get createProfileImage =>
+      '$baseUrl/file/userprofilepicture/create';
+  static String get getProfileImage => '$baseUrl/file/userprofilepicture/';
+
+  //property
+  static String get getAllProperties => '$baseUrl/property/';
+  static String get getPropertyById => '$baseUrl/property/';
+  static String get createProperty => '$baseUrl/property/create/';
+  static String get editProperty => '$baseUrl/property/edit/';
+
+  //property images
+  static String get createPropertyImage => '$baseUrl/property/image/create/';
+  static String get getAllPropertyImages => '$baseUrl/property/images/all/';
+  static String get getPropertyImageById => '$baseUrl/property/image/';
+  static String get deletePropertyImage => '$baseUrl/property/delete/';
+  static String get deletePropertyImageById =>
+      '$baseUrl/property/image/delete/';
+  static String get deleteAllPropertyImages => '$baseUrl/property/delete/all/';
+
+  //property types
+  static String get getAllPropertyTypes =>
+      '$baseUrl/propertytypes/'; //updated property types
+
+  //leads - Updated to match actual backend routes
+  static String get getAllLeads => '$baseUrl/leads';
+  static String get getAllNotPublishedLeads =>
+      '$baseUrl/leads/notpublishedusers';
+  static String get getAllLeadsWithParams => '$baseUrl/leads/withparams';
+  static String get getAssignedLeadsForCurrentUser =>
+      '$baseUrl/leads/assigned-to-me';
+  static String get getLeadById => '$baseUrl/leads/';
+  static String get createLead => '$baseUrl/leads/create';
+  static String get editLead => '$baseUrl/leads/edit/';
+  static String get deleteLead => '$baseUrl/leads/delete/';
+
+  //lead statuses
+  static String get getAllLeadStatuses => '$baseUrl/leadstatus';
+  static String get getLeadStatusById => '$baseUrl/leadstatus/';
+  static String get createLeadStatus => '$baseUrl/leadstatus/create';
+  static String get editLeadStatus => '$baseUrl/leadstatus/edit/';
+  static String get deleteLeadStatus => '$baseUrl/leadstatus/delete/';
+
+  //follow-up statuses
+  static String get getAllFollowUpStatuses => '$baseUrl/followupstatus';
+  static String get getFollowUpStatusById => '$baseUrl/followupstatus/';
+  static String get createFollowUpStatus => '$baseUrl/followupstatus/create';
+  static String get editFollowUpStatus => '$baseUrl/followupstatus/edit/';
+  static String get deleteFollowUpStatus => '$baseUrl/followupstatus/delete/';
+
+  //reference sources
+  static String get getAllReferenceSources => '$baseUrl/referancesource';
+  static String get getReferenceSourceById => '$baseUrl/referancesource/';
+  static String get createReferenceSource => '$baseUrl/referancesource/create';
+  static String get editReferenceSource => '$baseUrl/referancesource/edit/';
+  static String get deleteReferenceSource => '$baseUrl/referancesource/delete/';
+
+  //documents
+  static String get getAllDocuments => '$baseUrl/documents';
+  static String get getAllDocumentsWithParams =>
+      '$baseUrl/documents/withparams';
+  static String get getDocumentById => '$baseUrl/documents/';
+  static String get createDocument => '$baseUrl/documents/create';
+  static String get editDocument => '$baseUrl/documents/edit/';
+  static String get deleteDocument => '$baseUrl/documents/delete/';
+
+  //document types
+  static String get getAllDocumentTypes => '$baseUrl/documenttypes';
+  static String get getDocumentTypeById => '$baseUrl/documenttypes/';
+  static String get createDocumentType => '$baseUrl/documenttypes/create';
+  static String get editDocumentType => '$baseUrl/documenttypes/edit/';
+  static String get deleteDocumentType => '$baseUrl/documenttypes/delete/';
+
+  //favorite properties
+  static String get getAllFavoriteProperties => '$baseUrl/favoriteproperty';
+  static String get getFavoritePropertyById => '$baseUrl/favoriteproperty/';
+  static String get createFavoriteProperty =>
+      '$baseUrl/favoriteproperty/create';
+  static String get deleteFavoriteProperty =>
+      '$baseUrl/favoriteproperty/delete/';
+  static String get getFavoritePropertiesByUserId =>
+      '$baseUrl/favoriteproperty/user/';
+  static String get getFavoritePropertiesWithParams =>
+      '$baseUrl/favoriteproperty/withparams';
+}
