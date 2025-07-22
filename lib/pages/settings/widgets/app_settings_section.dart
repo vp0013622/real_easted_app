@@ -28,8 +28,6 @@ class _AppSettingsSectionState extends State<AppSettingsSection> {
   late bool _notificationsEnabled;
   late bool _hapticFeedbackEnabled;
   late String _fontSize;
-  late String _primaryColor;
-  late String _accentColor;
   late String _dateRange;
   late String _itemsPerPage;
   late String _timeFormat;
@@ -50,16 +48,6 @@ class _AppSettingsSectionState extends State<AppSettingsSection> {
     '1.1',
     '1.2',
     '1.3'
-  ];
-  final List<String> _colorOptions = [
-    '#2196F3',
-    '#4CAF50',
-    '#FF9800',
-    '#9C27B0',
-    '#F44336',
-    '#00BCD4',
-    '#795548',
-    '#607D8B'
   ];
   final List<String> _dateRangeOptions = ['7d', '30d', '90d', '1y'];
   final List<String> _itemsPerPageOptions = ['10', '20', '50', '100'];
@@ -85,8 +73,6 @@ class _AppSettingsSectionState extends State<AppSettingsSection> {
     _hapticFeedbackEnabled = widget.settings['hapticFeedbackEnabled'] ?? true;
     _selectedTheme = themeProvider.currentTheme;
     _fontSize = themeProvider.fontSize;
-    _primaryColor = themeProvider.primaryColor;
-    _accentColor = themeProvider.accentColor;
     _dateRange = widget.settings['dateRange'] ?? '30d';
     _itemsPerPage = widget.settings['itemsPerPage'] ?? '20';
     _timeFormat = widget.settings['timeFormat'] ?? '12h';
@@ -104,12 +90,6 @@ class _AppSettingsSectionState extends State<AppSettingsSection> {
     switch (key) {
       case 'theme':
         themeProvider.updateTheme(value);
-        break;
-      case 'primaryColor':
-        themeProvider.updatePrimaryColor(value);
-        break;
-      case 'accentColor':
-        themeProvider.updateAccentColor(value);
         break;
       case 'fontSize':
         themeProvider.updateFontSize(value);
@@ -129,8 +109,6 @@ class _AppSettingsSectionState extends State<AppSettingsSection> {
         // Update local state when theme provider changes
         _selectedTheme = themeProvider.currentTheme;
         _fontSize = themeProvider.fontSize;
-        _primaryColor = themeProvider.primaryColor;
-        _accentColor = themeProvider.accentColor;
 
         return SettingsSection(
           title: 'App Settings',
@@ -150,10 +128,6 @@ class _AppSettingsSectionState extends State<AppSettingsSection> {
               _buildThemeSetting(),
               const Divider(),
               _buildFontSizeSetting(),
-              const Divider(),
-              _buildPrimaryColorSetting(),
-              const Divider(),
-              _buildAccentColorSetting(),
               const Divider(),
               _buildDateRangeSetting(),
               const Divider(),
@@ -285,89 +259,6 @@ class _AppSettingsSectionState extends State<AppSettingsSection> {
               _fontSize = value;
             });
             _updateSetting('fontSize', value);
-          }
-        },
-      ),
-    );
-  }
-
-  Widget _buildPrimaryColorSetting() {
-    return ListTile(
-      leading: const Icon(Icons.color_lens, color: AppColors.brandPrimary),
-      title: const Text('Primary Color'),
-      subtitle: Text(_primaryColor),
-      trailing: DropdownButton<String>(
-        value: _colorOptions.contains(_primaryColor)
-            ? _primaryColor
-            : _colorOptions.first,
-        items: _colorOptions.map((color) {
-          return DropdownMenuItem(
-            value: color,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    color: Color(int.parse(color.replaceAll('#', '0xFF'))),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(color),
-              ],
-            ),
-          );
-        }).toList(),
-        onChanged: (value) {
-          if (value != null) {
-            setState(() {
-              _primaryColor = value;
-            });
-            _updateSetting('primaryColor', value);
-          }
-        },
-      ),
-    );
-  }
-
-  Widget _buildAccentColorSetting() {
-    return ListTile(
-      leading:
-          const Icon(Icons.color_lens_outlined, color: AppColors.brandPrimary),
-      title: const Text('Accent Color'),
-      subtitle: Text(_accentColor),
-      trailing: DropdownButton<String>(
-        value: _colorOptions.contains(_accentColor)
-            ? _accentColor
-            : _colorOptions.last,
-        items: _colorOptions.map((color) {
-          return DropdownMenuItem(
-            value: color,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    color: Color(int.parse(color.replaceAll('#', '0xFF'))),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(color),
-              ],
-            ),
-          );
-        }).toList(),
-        onChanged: (value) {
-          if (value != null) {
-            setState(() {
-              _accentColor = value;
-            });
-            _updateSetting('accentColor', value);
           }
         },
       ),

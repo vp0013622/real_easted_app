@@ -102,9 +102,15 @@ class _ReportsPageState extends State<ReportsPage> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: cardColor,
+        backgroundColor:
+            isDark ? AppColors.darkBackground : AppColors.lightBackground,
         iconTheme: IconThemeData(color: textColor),
         actions: [
+          IconButton(
+            icon: Icon(Icons.refresh, color: textColor),
+            onPressed: _loadData,
+            tooltip: 'Refresh Reports',
+          ),
           IconButton(
             icon: Icon(Icons.download, color: textColor),
             onPressed: _exportReport,
@@ -119,14 +125,18 @@ class _ReportsPageState extends State<ReportsPage> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                _buildReportSelector(),
-                _buildDateRangeSelector(),
-                Expanded(
-                  child: _buildReportContent(),
+          : RefreshIndicator(
+              onRefresh: _loadData,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  children: [
+                    _buildReportSelector(),
+                    _buildDateRangeSelector(),
+                    _buildReportContent(),
+                  ],
                 ),
-              ],
+              ),
             ),
     );
   }
@@ -593,4 +603,3 @@ class _ReportsPageState extends State<ReportsPage> {
     );
   }
 }
- 

@@ -17,21 +17,20 @@ class _AppappbarState extends State<AppAppbar> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor =
-        isDark ? AppColors.darkCardBackground : AppColors.lightCardBackground;
+    final backgroundColor =
+        isDark ? AppColors.darkBackground : AppColors.lightBackground;
     final textColor =
         isDark ? AppColors.darkWhiteText : AppColors.lightDarkText;
 
     return AppBar(
-      backgroundColor: cardColor,
+      backgroundColor: backgroundColor,
       iconTheme: IconThemeData(color: textColor),
       actions: [
         //theme toggle button
         IconButton(
-          icon:
-              isDark
-                  ? const Icon(CupertinoIcons.moon_fill)
-                  : const Icon(CupertinoIcons.sun_max_fill),
+          icon: isDark
+              ? const Icon(CupertinoIcons.moon_fill)
+              : const Icon(CupertinoIcons.sun_max_fill),
           onPressed: () {
             widget.onToggleTheme?.call();
           },

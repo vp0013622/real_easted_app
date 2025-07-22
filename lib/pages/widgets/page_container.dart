@@ -41,14 +41,13 @@ class PageContainer extends StatelessWidget {
     final cardColor =
         isDark ? AppColors.darkCardBackground : AppColors.lightCardBackground;
 
-    Widget content =
-        isLoading
-            ? const Center(child: AppSpinner())
-            : ListView(
-              physics: physics,
-              padding: contentPadding,
-              children: children,
-            );
+    Widget content = isLoading
+        ? const Center(child: AppSpinner())
+        : ListView(
+            physics: physics,
+            padding: contentPadding,
+            children: children,
+          );
 
     if (useSafeArea) {
       content = SafeArea(child: content);
@@ -56,16 +55,15 @@ class PageContainer extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      appBar:
-          showAppBar
-              ? AppBar(
-                title: title != null ? Text(title!) : null,
-                backgroundColor: cardColor,
-                elevation: 0,
-                centerTitle: centerTitle,
-                actions: actions,
-              )
-              : null,
+      appBar: showAppBar
+          ? AppBar(
+              title: title != null ? Text(title!) : null,
+              backgroundColor: backgroundColor,
+              elevation: 0,
+              centerTitle: centerTitle,
+              actions: actions,
+            )
+          : null,
       drawer: drawer,
       floatingActionButton: floatingActionButton,
       body: Stack(

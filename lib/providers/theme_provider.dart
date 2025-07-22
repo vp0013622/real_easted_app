@@ -2,46 +2,54 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:inhabit_realties/utils/color_utils.dart';
+import 'package:inhabit_realties/constants/contants.dart';
 
 class ThemeProvider extends ChangeNotifier {
   static const String _themeKey = 'app_theme';
-  static const String _primaryColorKey = 'app_primary_color';
-  static const String _accentColorKey = 'app_accent_color';
   static const String _fontSizeKey = 'app_font_size';
 
   String _currentTheme = 'light';
-  String _primaryColor = '#2196F3';
-  String _accentColor = '#FF4081';
   String _fontSize = '1.0';
 
   // Getters
   String get currentTheme => _currentTheme;
-  String get primaryColor => _primaryColor;
-  String get accentColor => _accentColor;
   String get fontSize => _fontSize;
 
   // Theme data
   ThemeData get lightTheme {
-    final primaryColor = _parseColor(_primaryColor);
-    final accentColor = _parseColor(_accentColor);
-
     return ThemeData(
       brightness: Brightness.light,
-      primaryColor: primaryColor,
+      primaryColor: AppColors.lightPrimary,
       colorScheme: ColorScheme.light(
-        primary: primaryColor,
-        secondary: accentColor,
+        primary: AppColors.lightPrimary,
+        secondary: AppColors.lightSecondary,
         surface: Colors.white,
         onSurface: Colors.black87,
       ),
       textTheme: _getTextTheme(),
-      appBarTheme: ColorUtils.getAppBarTheme(primaryColor, false),
+      appBarTheme: AppBarTheme(
+        backgroundColor: AppColors.lightBackground,
+        centerTitle: true,
+        elevation: 0,
+        titleTextStyle: TextStyle(
+          color: AppColors.lightDarkText,
+          fontWeight: FontWeight.bold,
+        ),
+        iconTheme: IconThemeData(color: AppColors.lightDarkText),
+      ),
       elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ColorUtils.getSafeButtonStyle(primaryColor, false),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.lightBackground,
+          foregroundColor: AppColors.lightDarkText,
+          minimumSize: const Size.fromHeight(50),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: primaryColor,
-        foregroundColor: ColorUtils.getContrastingColor(primaryColor),
+        backgroundColor: AppColors.lightPrimary,
+        foregroundColor: Colors.white,
       ),
       iconTheme: IconThemeData(
         color: Colors.black87,
@@ -50,26 +58,39 @@ class ThemeProvider extends ChangeNotifier {
   }
 
   ThemeData get darkTheme {
-    final primaryColor = _parseColor(_primaryColor);
-    final accentColor = _parseColor(_accentColor);
-
     return ThemeData(
       brightness: Brightness.dark,
-      primaryColor: primaryColor,
+      primaryColor: AppColors.darkPrimary,
       colorScheme: ColorScheme.dark(
-        primary: primaryColor,
-        secondary: accentColor,
+        primary: AppColors.darkPrimary,
+        secondary: AppColors.darkSecondary,
         surface: const Color(0xFF2D2D2D),
         onSurface: Colors.white,
       ),
       textTheme: _getTextTheme(),
-      appBarTheme: ColorUtils.getAppBarTheme(primaryColor, true),
+      appBarTheme: AppBarTheme(
+        backgroundColor: AppColors.darkBackground,
+        centerTitle: true,
+        elevation: 0,
+        titleTextStyle: TextStyle(
+          color: AppColors.darkWhiteText,
+          fontWeight: FontWeight.bold,
+        ),
+        iconTheme: IconThemeData(color: AppColors.darkWhiteText),
+      ),
       elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ColorUtils.getSafeButtonStyle(primaryColor, true),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.darkBackground,
+          foregroundColor: AppColors.darkWhiteText,
+          minimumSize: const Size.fromHeight(50),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: primaryColor,
-        foregroundColor: ColorUtils.getContrastingColor(primaryColor),
+        backgroundColor: AppColors.darkPrimary,
+        foregroundColor: Colors.white,
       ),
       iconTheme: const IconThemeData(
         color: Colors.white,
@@ -94,20 +115,6 @@ class ThemeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Update primary color
-  Future<void> updatePrimaryColor(String color) async {
-    _primaryColor = color;
-    await _saveThemeSettings();
-    notifyListeners();
-  }
-
-  // Update accent color
-  Future<void> updateAccentColor(String color) async {
-    _accentColor = color;
-    await _saveThemeSettings();
-    notifyListeners();
-  }
-
   // Update font size
   Future<void> updateFontSize(String size) async {
     _fontSize = size;
@@ -120,14 +127,10 @@ class ThemeProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       _currentTheme = prefs.getString(_themeKey) ?? 'light';
-      _primaryColor = prefs.getString(_primaryColorKey) ?? '#2196F3';
-      _accentColor = prefs.getString(_accentColorKey) ?? '#FF4081';
       _fontSize = prefs.getString(_fontSizeKey) ?? '1.0';
     } catch (e) {
       // Use default values if there's an error
       _currentTheme = 'light';
-      _primaryColor = '#2196F3';
-      _accentColor = '#FF4081';
       _fontSize = '1.0';
     }
   }
@@ -137,20 +140,9 @@ class ThemeProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_themeKey, _currentTheme);
-      await prefs.setString(_primaryColorKey, _primaryColor);
-      await prefs.setString(_accentColorKey, _accentColor);
       await prefs.setString(_fontSizeKey, _fontSize);
     } catch (e) {
       // Handle error silently
-    }
-  }
-
-  // Parse color string to Color
-  Color _parseColor(String colorString) {
-    try {
-      return Color(int.parse(colorString.replaceAll('#', '0xFF')));
-    } catch (e) {
-      return Colors.blue;
     }
   }
 

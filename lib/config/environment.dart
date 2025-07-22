@@ -20,12 +20,13 @@ class EnvironmentConfig {
 
   static String get baseUrl {
     // 🏠 FOR LOCAL DEVELOPMENT - Uncomment the local URL and comment the production URL
-    //return 'http://192.168.85.166:3001/api'; // Local development //my network
-    //return 'http://192.168.0.160:3001/api'; // Local development //office network
+    return 'http://192.168.85.166:3001/api'; // Local development //my network
+    //return 'http://192.168.0.160:3001/api'; // Local development //office network 1
+    //return 'http://192.168.137.91:3001/api'; // Local development //office network 2
 
     // 🌐 FOR PRODUCTION - Uncomment the production URL and comment the local URL
     //////return 'https://insightwaveit-backend-p0cl.onrender.com/api'; // Production
-    return 'https://backend-hyoy.onrender.com/api';
+    //return 'https://updatedbackend-bqg8.onrender.com/api';
 
     // Common local IPs to try:
     // return 'http://10.0.2.2:3001/api'; // Android Emulator

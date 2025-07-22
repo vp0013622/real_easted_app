@@ -115,8 +115,8 @@ class _AppBottomNavState extends State<AppBottomNav>
               ),
               _buildNavItem(
                 context,
-                icon: CupertinoIcons.chart_bar_fill,
-                label: 'Reports',
+                icon: CupertinoIcons.calendar,
+                label: 'Meetings',
                 index: 3,
                 animation: _animations[3],
               ),

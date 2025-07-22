@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:inhabit_realties/constants/contants.dart';
 
-class AppAppBar extends StatefulWidget implements PreferredSizeWidget{
+class AppAppBar extends StatefulWidget implements PreferredSizeWidget {
   const AppAppBar({super.key});
 
   @override
@@ -15,12 +15,14 @@ class _AppAppBarState extends State<AppAppBar> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? AppColors.darkCardBackground : AppColors.lightCardBackground;
-    final textColor = isDark ? AppColors.darkWhiteText : AppColors.lightDarkText;
+    final backgroundColor =
+        isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final textColor =
+        isDark ? AppColors.darkWhiteText : AppColors.lightDarkText;
 
     return AppBar(
-        backgroundColor: cardColor,
-        iconTheme: IconThemeData(color: textColor),
-      );
+      backgroundColor: backgroundColor,
+      iconTheme: IconThemeData(color: textColor),
+    );
   }
 }

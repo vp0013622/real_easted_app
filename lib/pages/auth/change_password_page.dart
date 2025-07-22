@@ -71,7 +71,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                 color: textColor,
               ),
             ),
-            backgroundColor: cardColor,
+            backgroundColor: backgroundColor,
             elevation: 0,
             iconTheme: IconThemeData(color: textColor),
           ),

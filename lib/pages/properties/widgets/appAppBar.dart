@@ -7,9 +7,9 @@ import 'package:inhabit_realties/controllers/favoriteProperty/favoritePropertyCo
 class AppAppBar extends StatefulWidget implements PreferredSizeWidget {
   final VoidCallback? onToggleFavorites;
   final bool showFavoritesOnly;
-  
+
   const AppAppBar({
-    super.key, 
+    super.key,
     this.onToggleFavorites,
     this.showFavoritesOnly = false,
   });
@@ -25,13 +25,13 @@ class _AppAppBarState extends State<AppAppBar> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor =
-        isDark ? AppColors.darkCardBackground : AppColors.lightCardBackground;
+    final backgroundColor =
+        isDark ? AppColors.darkBackground : AppColors.lightBackground;
     final textColor =
         isDark ? AppColors.darkWhiteText : AppColors.lightDarkText;
 
     return AppBar(
-      backgroundColor: cardColor,
+      backgroundColor: backgroundColor,
       iconTheme: IconThemeData(color: textColor),
       actions: [
         //AnimatedSearchBar(),

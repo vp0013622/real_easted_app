@@ -87,7 +87,8 @@ class _SettingsPageState extends State<SettingsPage> {
                 color: textColor,
               ),
             ),
-            backgroundColor: cardColor,
+            backgroundColor:
+                isDark ? AppColors.darkBackground : AppColors.lightBackground,
             elevation: 0,
             iconTheme: IconThemeData(color: textColor),
             actions: [
@@ -223,8 +224,6 @@ class _SettingsPageState extends State<SettingsPage> {
                         'notificationsEnabled': true,
                         'hapticFeedbackEnabled': true,
                         'fontSize': themeProvider.fontSize,
-                        'primaryColor': themeProvider.primaryColor,
-                        'accentColor': themeProvider.accentColor,
                         'dateRange': '30d',
                         'itemsPerPage': '20',
                         'timeFormat': '12h',

@@ -45,6 +45,16 @@ class _LoginPageState extends State<LoginPage> {
           isDark ? AppColors.darkBackground : AppColors.lightBackground,
       appBar: AppBar(
         title: Text(LoginPageProvider.title),
+        backgroundColor:
+            isDark ? AppColors.darkBackground : AppColors.lightBackground,
+        elevation: 0,
+        iconTheme: IconThemeData(
+          color: isDark ? AppColors.darkWhiteText : AppColors.lightDarkText,
+        ),
+        titleTextStyle: TextStyle(
+          color: isDark ? AppColors.darkWhiteText : AppColors.lightDarkText,
+          fontWeight: FontWeight.bold,
+        ),
       ),
       body: isPageLoading
           ? const AppSpinner()
@@ -102,10 +112,27 @@ class _LoginPageState extends State<LoginPage> {
 
                         //login elevated button container
                         Container(
-                          height: 80,
-                          padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                          width: double.infinity,
+                          height: 50,
+                          margin: const EdgeInsets.fromLTRB(20, 20, 20, 0),
                           child: ElevatedButton(
-                            child: Text(LoginPageProvider.title),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.brandPrimary,
+                              foregroundColor: Colors.white,
+                              elevation: 8,
+                              shadowColor: AppColors.brandPrimary.withOpacity(0.3),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: Text(
+                              LoginPageProvider.title,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
                             onPressed: () async {
                               if (_formKey.currentState!.validate()) {
                                 // Proceed with login

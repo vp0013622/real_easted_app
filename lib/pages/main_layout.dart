@@ -3,7 +3,7 @@ import 'package:inhabit_realties/pages/home/home_page.dart';
 import 'package:inhabit_realties/pages/leads/leads_page.dart';
 import 'package:inhabit_realties/pages/profile/profile_page.dart';
 import 'package:inhabit_realties/pages/properties/properties_page.dart';
-import 'package:inhabit_realties/pages/reports/reports_page.dart';
+import 'package:inhabit_realties/pages/meetingSchedule/meeting_schedule_user_page.dart';
 import 'package:inhabit_realties/pages/widgets/app_bottom_nav.dart';
 
 class MainLayout extends StatefulWidget {
@@ -26,7 +26,7 @@ class _MainLayoutState extends State<MainLayout> {
       HomePage(onToggleTheme: () => widget.onToggleTheme?.call()),
       const PropertiesPage(),
       const LeadsPage(),
-      const ReportsPage(),
+      const MeetingScheduleUserPage(),
       const ProfilePage(),
     ];
   }

@@ -195,27 +195,25 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
               ),
               value: selectedRoleId,
-              items:
-                  roles.map((role) {
-                    return DropdownMenuItem<String>(
-                      value: role.id,
-                      child: Text(
-                        role.name,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    );
-                  }).toList(),
-              onChanged:
-                  isLoading
-                      ? null
-                      : (value) {
-                        if (value != null) {
-                          setState(() {
-                            selectedRoleId = value;
-                            _roleId.text = value;
-                          });
-                        }
-                      },
+              items: roles.map((role) {
+                return DropdownMenuItem<String>(
+                  value: role.id,
+                  child: Text(
+                    role.name,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                );
+              }).toList(),
+              onChanged: isLoading
+                  ? null
+                  : (value) {
+                      if (value != null) {
+                        setState(() {
+                          selectedRoleId = value;
+                          _roleId.text = value;
+                        });
+                      }
+                    },
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return RegisterPageProvider.roleValidationMessage;
@@ -343,25 +341,24 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
           elevation: 2,
         ),
-        child:
-            isLoading
-                ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      AppColors.darkWhiteText,
-                    ),
-                  ),
-                )
-                : Text(
-                  RegisterPageProvider.registerButton,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+        child: isLoading
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    AppColors.darkWhiteText,
                   ),
                 ),
+              )
+            : Text(
+                RegisterPageProvider.registerButton,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
       ),
     );
   }
@@ -399,7 +396,7 @@ class _RegisterPageState extends State<RegisterPage> {
           backgroundColor: backgroundColor,
           appBar: AppBar(
             title: Text(RegisterPageProvider.title),
-            backgroundColor: cardBackgroundColor,
+            backgroundColor: backgroundColor,
             elevation: 0,
             centerTitle: true,
           ),

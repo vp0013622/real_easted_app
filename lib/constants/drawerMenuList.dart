@@ -19,6 +19,11 @@ class DrawerMenuList {
       'title': 'Reports',
     },
     {
+      'path': '/meeting_schedules',
+      'icon': CupertinoIcons.calendar,
+      'title': 'Meeting Schedules',
+    },
+    {
       'path': '/settings',
       'icon': CupertinoIcons.settings_solid,
       'title': 'Settings',

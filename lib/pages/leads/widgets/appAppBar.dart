@@ -9,7 +9,7 @@ class LeadsAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final backgroundColor =
-        isDark ? AppColors.darkCardBackground : AppColors.lightCardBackground;
+        isDark ? AppColors.darkBackground : AppColors.lightBackground;
     final textColor =
         isDark ? AppColors.darkWhiteText : AppColors.lightDarkText;
 

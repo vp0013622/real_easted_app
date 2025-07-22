@@ -13,21 +13,22 @@ class AppAppbar extends StatefulWidget implements PreferredSizeWidget {
 }
 
 class _AppappbarState extends State<AppAppbar> {
- 
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? AppColors.darkCardBackground : AppColors.lightCardBackground;
-    final textColor = isDark ? AppColors.darkWhiteText : AppColors.lightDarkText;
+    final backgroundColor =
+        isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final textColor =
+        isDark ? AppColors.darkWhiteText : AppColors.lightDarkText;
     final dangerColor = isDark ? AppColors.darkDanger : AppColors.lightDanger;
     return AppBar(
-        backgroundColor: cardColor,
-        actions: const [
-          Padding(padding: EdgeInsets.only(right: 20),
-            child: AddNewUserButton(),
-          ),
-        ],
-      );
+      backgroundColor: backgroundColor,
+      actions: const [
+        Padding(
+          padding: EdgeInsets.only(right: 20),
+          child: AddNewUserButton(),
+        ),
+      ],
+    );
   }
 }

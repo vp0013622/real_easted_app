@@ -893,7 +893,7 @@ class _AddPropertyPageState extends State<AddPropertyPage> {
           backgroundColor: backgroundColor,
           appBar: AppBar(
             title: Text(PropertyPageProvider.title),
-            backgroundColor: cardBackgroundColor,
+            backgroundColor: backgroundColor,
             elevation: 0,
             centerTitle: true,
             actions: [

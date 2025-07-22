@@ -27,6 +27,12 @@ class ProfileMenuList {
       'trailingNumberLabel': null,
     },
     {
+      'path': '/my_meetings',
+      'icon': CupertinoIcons.calendar,
+      'title': 'My Meetings',
+      'trailingNumberLabel': null,
+    },
+    {
       'path': '/settings',
       'icon': CupertinoIcons.settings_solid,
       'title': 'Settings',
