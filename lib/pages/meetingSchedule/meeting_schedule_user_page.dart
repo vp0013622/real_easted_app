@@ -621,144 +621,147 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
           ),
         ],
       ),
-      body: _isLoading
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      gradient: AppColors.brandGradient,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Loading your meetings...',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: textColor.withOpacity(0.7),
-                    ),
-                  ),
-                ],
-              ),
-            )
-          : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: AppColors.lightDanger.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Icon(
-                          CupertinoIcons.exclamationmark_triangle,
-                          color: AppColors.lightDanger,
-                          size: 40,
-                        ),
+      body: RefreshIndicator(
+        onRefresh: _loadMyMeetings,
+        child: _isLoading
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        gradient: AppColors.brandGradient,
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Error loading meetings',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: textColor,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _error!,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: textColor.withOpacity(0.7),
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 20),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.brandPrimary,
-                          foregroundColor: Colors.white,
-                          elevation: 8,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: _loadMyMeetings,
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                )
-              : _meetings.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(30),
-                            decoration: BoxDecoration(
-                              gradient: AppColors.brandGradient,
-                              borderRadius: BorderRadius.circular(30),
-                              boxShadow: [
-                                BoxShadow(
-                                  color:
-                                      AppColors.brandPrimary.withOpacity(0.3),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 10),
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              CupertinoIcons.calendar_badge_plus,
-                              color: Colors.white,
-                              size: 60,
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          Text(
-                            'No meetings found',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: textColor,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            _showScheduledMeetings
-                                ? 'You haven\'t scheduled any meetings yet'
-                                : 'You don\'t have any meetings scheduled',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: textColor.withOpacity(0.7),
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    )
-                  : SlideTransition(
-                      position: _slideAnimation,
-                      child: FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: ListView.builder(
-                          padding: const EdgeInsets.only(bottom: 100),
-                          itemCount: _meetings.length,
-                          itemBuilder: (context, index) {
-                            return _buildMeetingCard(_meetings[index], index);
-                          },
-                        ),
+                      child: const CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Loading your meetings...',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: textColor.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : _error != null
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: AppColors.lightDanger.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Icon(
+                            CupertinoIcons.exclamationmark_triangle,
+                            color: AppColors.lightDanger,
+                            size: 40,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Error loading meetings',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: textColor,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _error!,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: textColor.withOpacity(0.7),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 20),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.brandPrimary,
+                            foregroundColor: Colors.white,
+                            elevation: 8,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: _loadMyMeetings,
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  )
+                : _meetings.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(30),
+                              decoration: BoxDecoration(
+                                gradient: AppColors.brandGradient,
+                                borderRadius: BorderRadius.circular(30),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color:
+                                        AppColors.brandPrimary.withOpacity(0.3),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 10),
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                CupertinoIcons.calendar_badge_plus,
+                                color: Colors.white,
+                                size: 60,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              'No meetings found',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: textColor,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _showScheduledMeetings
+                                  ? 'You haven\'t scheduled any meetings yet'
+                                  : 'You don\'t have any meetings scheduled',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: textColor.withOpacity(0.7),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      )
+                    : SlideTransition(
+                        position: _slideAnimation,
+                        child: FadeTransition(
+                          opacity: _fadeAnimation,
+                          child: ListView.builder(
+                            padding: const EdgeInsets.only(bottom: 100),
+                            itemCount: _meetings.length,
+                            itemBuilder: (context, index) {
+                              return _buildMeetingCard(_meetings[index], index);
+                            },
+                          ),
+                        ),
+                      ),
+      ),
       floatingActionButton: AnimatedBuilder(
         animation: _animationController,
         builder: (context, child) {

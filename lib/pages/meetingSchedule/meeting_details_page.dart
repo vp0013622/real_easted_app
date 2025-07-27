@@ -8,6 +8,8 @@ import 'package:inhabit_realties/models/auth/UsersModel.dart';
 import 'package:inhabit_realties/models/property/PropertyModel.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:inhabit_realties/pages/meetingSchedule/edit_meeting_page.dart';
+import 'package:inhabit_realties/services/meeting_schedule_service.dart';
 
 class MeetingDetailsPage extends StatefulWidget {
   final MeetingSchedule meeting;
@@ -22,6 +24,7 @@ class _MeetingDetailsPageState extends State<MeetingDetailsPage>
     with TickerProviderStateMixin {
   final UserController _userController = UserController();
   final PropertyService _propertyService = PropertyService();
+  final MeetingScheduleService _meetingService = MeetingScheduleService();
 
   UsersModel? _customer;
   UsersModel? _scheduledBy;
@@ -371,14 +374,30 @@ class _MeetingDetailsPageState extends State<MeetingDetailsPage>
               color: Colors.transparent,
               child: InkWell(
                 borderRadius: BorderRadius.circular(20),
-                onTap: () {
-                  // TODO: Navigate to edit meeting page
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Edit functionality coming soon!'),
-                      backgroundColor: AppColors.brandPrimary,
-                    ),
-                  );
+                onTap: () async {
+                  print('Edit button tapped'); // Debug print
+                  try {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            EditMeetingPage(meeting: widget.meeting),
+                      ),
+                    );
+                    print('Edit result: $result'); // Debug print
+                    if (result == true) {
+                      // Refresh the page or navigate back
+                      Navigator.pop(context, true);
+                    }
+                  } catch (e) {
+                    print('Error navigating to edit page: $e'); // Debug print
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error opening edit page: $e'),
+                        backgroundColor: AppColors.lightDanger,
+                      ),
+                    );
+                  }
                 },
                 child: const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -576,7 +595,8 @@ class _MeetingDetailsPageState extends State<MeetingDetailsPage>
                             children: [
                               _buildInfoRow('Name', _property!.name),
                               _buildInfoRow('Price', '\$${_property!.price}'),
-                              _buildInfoRow('Address', '${_property!.propertyAddress.street}, ${_property!.propertyAddress.city}'),
+                              _buildInfoRow('Address',
+                                  '${_property!.propertyAddress.street}, ${_property!.propertyAddress.city}'),
                               if (_property!.description.isNotEmpty)
                                 _buildInfoRow(
                                     'Description', _property!.description),
@@ -643,15 +663,32 @@ class _MeetingDetailsPageState extends State<MeetingDetailsPage>
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        onPressed: () {
-                          // TODO: Implement reschedule functionality
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content:
-                                  Text('Reschedule functionality coming soon!'),
-                              backgroundColor: AppColors.lightWarning,
-                            ),
-                          );
+                        onPressed: () async {
+                          print('Reschedule button tapped'); // Debug print
+                          try {
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    EditMeetingPage(meeting: widget.meeting),
+                              ),
+                            );
+                            print('Reschedule result: $result'); // Debug print
+                            if (result == true) {
+                              // Refresh the page or navigate back
+                              Navigator.pop(context, true);
+                            }
+                          } catch (e) {
+                            print(
+                                'Error navigating to reschedule page: $e'); // Debug print
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content:
+                                    Text('Error opening reschedule page: $e'),
+                                backgroundColor: AppColors.lightDanger,
+                              ),
+                            );
+                          }
                         },
                         child: const Text(
                           'Reschedule',
@@ -674,15 +711,63 @@ class _MeetingDetailsPageState extends State<MeetingDetailsPage>
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        onPressed: () {
-                          // TODO: Implement cancel functionality
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content:
-                                  Text('Cancel functionality coming soon!'),
-                              backgroundColor: AppColors.lightDanger,
+                        onPressed: () async {
+                          print('Cancel button tapped'); // Debug print
+                          final confirmed = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Cancel Meeting'),
+                              content: const Text(
+                                  'Are you sure you want to cancel this meeting? This action cannot be undone.'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(context, false),
+                                  child: const Text('No'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.lightDanger,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  child: const Text('Yes, Cancel'),
+                                ),
+                              ],
                             ),
                           );
+
+                          if (confirmed == true) {
+                            print('User confirmed cancellation'); // Debug print
+                            try {
+                              await _meetingService
+                                  .deleteMeeting(widget.meeting.id);
+                              print(
+                                  'Meeting deleted successfully'); // Debug print
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content:
+                                        Text('Meeting cancelled successfully'),
+                                    backgroundColor: AppColors.lightDanger,
+                                  ),
+                                );
+                                Navigator.pop(context, true);
+                              }
+                            } catch (e) {
+                              print(
+                                  'Error cancelling meeting: $e'); // Debug print
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content:
+                                        Text('Error cancelling meeting: $e'),
+                                    backgroundColor: AppColors.lightDanger,
+                                  ),
+                                );
+                              }
+                            }
+                          }
                         },
                         child: const Text(
                           'Cancel',

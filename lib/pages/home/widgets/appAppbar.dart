@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:inhabit_realties/constants/contants.dart';
+import 'package:inhabit_realties/widgets/notification_badge.dart';
 
 class AppAppbar extends StatefulWidget implements PreferredSizeWidget {
   final VoidCallback? onToggleTheme;
@@ -36,7 +37,7 @@ class _AppappbarState extends State<AppAppbar> {
           },
         ),
         //notifications
-        IconButton(icon: const Icon(CupertinoIcons.bell), onPressed: () {}),
+        const NotificationBadgeWithLoading(),
         const SizedBox(width: 8), // Add some padding at the end
       ],
     );

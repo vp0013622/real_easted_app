@@ -32,8 +32,12 @@ import 'package:inhabit_realties/pages/meetingSchedule/meeting_creation_guide.da
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'package:inhabit_realties/controllers/favoriteProperty/favoritePropertyController.dart';
+import 'package:inhabit_realties/controllers/notification/notificationController.dart';
 import 'package:inhabit_realties/providers/theme_provider.dart';
 import 'package:inhabit_realties/pages/meetingSchedule/meeting_details_page.dart';
+import 'package:inhabit_realties/pages/meetingSchedule/edit_meeting_page.dart';
+import 'package:inhabit_realties/pages/notifications/notifications_page.dart';
+import 'package:inhabit_realties/pages/notifications/test_notifications_page.dart';
 
 void main() {
   runApp(const MainApp());
@@ -58,6 +62,7 @@ class _MainAppState extends State<MainApp> {
       providers: [
         ChangeNotifierProvider(create: (_) => FavoritePropertyController()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationController()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -126,6 +131,11 @@ class _MainAppState extends State<MainApp> {
                     as Map<String, dynamic>;
                 return MeetingDetailsPage(meeting: args['meeting']);
               },
+              '/edit_meeting': (context) {
+                final args = ModalRoute.of(context)!.settings.arguments
+                    as Map<String, dynamic>;
+                return EditMeetingPage(meeting: args['meeting']);
+              },
               '/activity_details': (context) {
                 final args = ModalRoute.of(context)!.settings.arguments
                     as Map<String, dynamic>;
@@ -134,6 +144,8 @@ class _MainAppState extends State<MainApp> {
                   count: args['count'],
                 );
               },
+              '/notifications': (context) => const NotificationsPage(),
+              '/notifications/test': (context) => const TestNotificationsPage(),
             },
           );
         },

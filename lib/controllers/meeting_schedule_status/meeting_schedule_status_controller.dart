@@ -24,7 +24,7 @@ class MeetingScheduleStatusController {
       print('DEBUG: Token: ${token.substring(0, 20)}...'); // Debug log
 
       final response = await http.get(
-        Uri.parse('${ApiUrls.baseUrl}/meetingschedulestatus'),
+        Uri.parse(ApiUrls.getAllMeetingScheduleStatuses),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -57,7 +57,7 @@ class MeetingScheduleStatusController {
       }
 
       final response = await http.get(
-        Uri.parse('${ApiUrls.baseUrl}/meetingschedulestatus/$id'),
+        Uri.parse('${ApiUrls.getMeetingScheduleStatusById}$id'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',

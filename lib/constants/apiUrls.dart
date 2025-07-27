@@ -102,4 +102,40 @@ class ApiUrls {
       '$baseUrl/favoriteproperty/user/';
   static String get getFavoritePropertiesWithParams =>
       '$baseUrl/favoriteproperty/withparams';
+
+  //meeting schedules - Updated to match backend routes
+  static String get getAllMeetingSchedules => '$baseUrl/meetingschedule';
+  static String get getMyMeetings => '$baseUrl/meetingschedule/my-meetings/';
+  static String get getAllNotPublishedMeetingSchedules =>
+      '$baseUrl/meetingschedule/notpublished';
+  static String get getMeetingScheduleById =>
+      '$baseUrl/meetingschedule/scheduledByUserId/';
+  static String get createMeetingSchedule => '$baseUrl/meetingschedule/create';
+  static String get editMeetingSchedule => '$baseUrl/meetingschedule/edit/';
+  static String get deleteMeetingSchedule => '$baseUrl/meetingschedule/delete/';
+
+  //meeting schedule statuses
+  static String get getAllMeetingScheduleStatuses =>
+      '$baseUrl/meetingschedulestatus';
+  static String get getMeetingScheduleStatusById =>
+      '$baseUrl/meetingschedulestatus/';
+
+  //notifications
+  static String get createNotification => '$baseUrl/notifications/create';
+  static String get getAllNotifications => '$baseUrl/notifications';
+  static String get getAllNotPublishedNotifications =>
+      '$baseUrl/notifications/notpublished';
+  static String get getAllNotificationsWithParams =>
+      '$baseUrl/notifications/withparams';
+  static String get getNotificationById => '$baseUrl/notifications/';
+  static String get editNotification => '$baseUrl/notifications/edit/';
+  static String get deleteNotificationById => '$baseUrl/notifications/delete/';
+  static String get getUserNotifications => '$baseUrl/notifications/user/';
+  static String get markNotificationAsRead => '$baseUrl/notifications/read/';
+  static String get markAllNotificationsAsRead =>
+      '$baseUrl/notifications/read-all/';
+  static String get deleteNotification => '$baseUrl/notifications/delete/';
+  static String get getUnreadCount => '$baseUrl/notifications/unread-count/';
+  static String get createTestNotification =>
+      '$baseUrl/notifications/test/create';
 }

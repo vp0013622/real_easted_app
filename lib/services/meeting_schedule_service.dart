@@ -18,7 +18,7 @@ class MeetingScheduleService {
       }
 
       final response = await http.get(
-        Uri.parse('${ApiUrls.baseUrl}/meetingschedule'),
+        Uri.parse(ApiUrls.getAllMeetingSchedules),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -47,7 +47,7 @@ class MeetingScheduleService {
       }
 
       final response = await http.get(
-        Uri.parse('${ApiUrls.baseUrl}/meetingschedule/my-meetings'),
+        Uri.parse(ApiUrls.getMyMeetings),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -77,7 +77,7 @@ class MeetingScheduleService {
       }
 
       final response = await http.post(
-        Uri.parse('${ApiUrls.baseUrl}/meetingschedule/create'),
+        Uri.parse(ApiUrls.createMeetingSchedule),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -108,7 +108,7 @@ class MeetingScheduleService {
       }
 
       final response = await http.put(
-        Uri.parse('${ApiUrls.baseUrl}/meetingschedule/edit/$id'),
+        Uri.parse('${ApiUrls.editMeetingSchedule}$id'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -135,7 +135,7 @@ class MeetingScheduleService {
       }
 
       final response = await http.delete(
-        Uri.parse('${ApiUrls.baseUrl}/meetingschedule/delete/$id'),
+        Uri.parse('${ApiUrls.deleteMeetingSchedule}$id'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -147,6 +147,63 @@ class MeetingScheduleService {
       }
     } catch (e) {
       throw Exception('Error deleting meeting: $e');
+    }
+  }
+
+  // Get all not published meeting schedules (admin only)
+  Future<List<MeetingSchedule>> getAllNotPublishedMeetings() async {
+    try {
+      final token = await _getToken();
+      if (token == null) {
+        throw Exception('No authentication token found');
+      }
+
+      final response = await http.get(
+        Uri.parse(ApiUrls.getAllNotPublishedMeetingSchedules),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        final List<dynamic> meetingsData = data['data'] ?? [];
+        return meetingsData
+            .map((json) => MeetingSchedule.fromJson(json))
+            .toList();
+      } else {
+        throw Exception('Failed to load not published meetings: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error loading not published meetings: $e');
+    }
+  }
+
+  // Get meeting schedule by user ID
+  Future<MeetingSchedule> getMeetingScheduleByUserId(String userId) async {
+    try {
+      final token = await _getToken();
+      if (token == null) {
+        throw Exception('No authentication token found');
+      }
+
+      final response = await http.get(
+        Uri.parse('${ApiUrls.getMeetingScheduleById}$userId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        return MeetingSchedule.fromJson(data['data']);
+      } else {
+        throw Exception('Failed to load meeting schedule: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error loading meeting schedule: $e');
     }
   }
 }
