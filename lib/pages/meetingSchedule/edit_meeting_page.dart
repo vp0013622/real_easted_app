@@ -103,7 +103,8 @@ class _EditMeetingPageState extends State<EditMeetingPage> {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate ?? DateTime.now(),
-      firstDate: DateTime.now(),
+      firstDate: DateTime.now().subtract(
+          const Duration(days: 30)), // Allow past dates for rescheduling
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
     if (picked != null && picked != _selectedDate) {
@@ -138,8 +139,13 @@ class _EditMeetingPageState extends State<EditMeetingPage> {
   }
 
   Future<void> _updateMeeting() async {
-    if (!_formKey.currentState!.validate()) return;
+    print('DEBUG: Starting meeting update...'); // Debug print
+    if (!_formKey.currentState!.validate()) {
+      print('DEBUG: Form validation failed'); // Debug print
+      return;
+    }
     if (_selectedDate == null || _selectedStartTime == null) {
+      print('DEBUG: Date or start time is null'); // Debug print
       AppSnackBar.showSnackBar(
         context,
         'Error',
@@ -167,10 +173,16 @@ class _EditMeetingPageState extends State<EditMeetingPage> {
             ? _durationController.text
             : null,
         'status': _selectedStatus,
+        'customerId': widget.meeting.customerId,
         'notes': _notesController.text,
       };
 
-      await _meetingService.updateMeeting(widget.meeting.id, meetingData);
+      print('DEBUG: Meeting data to update: $meetingData'); // Debug print
+      print('DEBUG: Meeting ID: ${widget.meeting.id}'); // Debug print
+
+      final result =
+          await _meetingService.updateMeeting(widget.meeting.id, meetingData);
+      print('DEBUG: Meeting update result: $result'); // Debug print
 
       if (mounted) {
         AppSnackBar.showSnackBar(
@@ -182,6 +194,7 @@ class _EditMeetingPageState extends State<EditMeetingPage> {
         Navigator.pop(context, true);
       }
     } catch (e) {
+      print('DEBUG: Error updating meeting: $e'); // Debug print
       if (mounted) {
         AppSnackBar.showSnackBar(
           context,
@@ -268,6 +281,262 @@ class _EditMeetingPageState extends State<EditMeetingPage> {
     super.dispose();
   }
 
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBasicInfoSection() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 25),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('Basic Information'),
+          FormTextField(
+            textEditingController: _titleController,
+            labelText: 'Meeting Title *',
+            prefixIcon: CupertinoIcons.calendar,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter a meeting title';
+              }
+              return null;
+            },
+          ),
+          Padding(
+            padding: const EdgeInsets.only(top: 20, left: 15, right: 15),
+            child: TextFormField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(
+                labelText: 'Description (Optional)',
+                prefixIcon: Icon(CupertinoIcons.doc_text),
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.multiline,
+              maxLines: 3,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDateTimeSection() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor =
+        isDark ? AppColors.darkWhiteText : AppColors.lightDarkText;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 25),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('Date & Time'),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Meeting Date',
+                      style: TextStyle(
+                        color: textColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    InkWell(
+                      onTap: () => _selectDate(context),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(CupertinoIcons.calendar, color: textColor),
+                            const SizedBox(width: 8),
+                            Text(
+                              _selectedDate != null
+                                  ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
+                                  : 'Select Date',
+                              style: TextStyle(color: textColor),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Start Time',
+                      style: TextStyle(
+                        color: textColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    InkWell(
+                      onTap: () => _selectStartTime(context),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(CupertinoIcons.clock, color: textColor),
+                            const SizedBox(width: 8),
+                            Text(
+                              _selectedStartTime != null
+                                  ? _selectedStartTime!.format(context)
+                                  : 'Select Time',
+                              style: TextStyle(color: textColor),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'End Time (Optional)',
+                style: TextStyle(
+                  color: textColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              InkWell(
+                onTap: () => _selectEndTime(context),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(CupertinoIcons.clock, color: textColor),
+                      const SizedBox(width: 8),
+                      Text(
+                        _selectedEndTime != null
+                            ? _selectedEndTime!.format(context)
+                            : 'Select End Time (Optional)',
+                        style: TextStyle(color: textColor),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusSection() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor =
+        isDark ? AppColors.darkWhiteText : AppColors.lightDarkText;
+
+    if (_statuses.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 25),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('Status'),
+          Padding(
+            padding: const EdgeInsets.only(top: 20, left: 15, right: 15),
+            child: DropdownButtonFormField<String>(
+              value: _selectedStatus,
+              decoration: const InputDecoration(
+                labelText: 'Status *',
+                prefixIcon: Icon(CupertinoIcons.flag),
+                border: OutlineInputBorder(),
+              ),
+              items: _statuses.map((status) {
+                return DropdownMenuItem(
+                  value: status.id,
+                  child: Text(status.name),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() {
+                  _selectedStatus = value;
+                });
+              },
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please select a status';
+                }
+                return null;
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAdditionalInfoSection() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 25),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('Additional Information'),
+          FormTextField(
+            textEditingController: _durationController,
+            labelText: 'Duration (Optional)',
+            prefixIcon: CupertinoIcons.time,
+          ),
+          Padding(
+            padding: const EdgeInsets.only(top: 20, left: 15, right: 15),
+            child: TextFormField(
+              controller: _notesController,
+              decoration: const InputDecoration(
+                labelText: 'Notes (Optional)',
+                prefixIcon: Icon(CupertinoIcons.doc_text),
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.multiline,
+              maxLines: 3,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -315,202 +584,10 @@ class _EditMeetingPageState extends State<EditMeetingPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Title
-                    FormTextField(
-                      textEditingController: _titleController,
-                      labelText: 'Meeting Title',
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter meeting title';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Description
-                    FormTextField(
-                      textEditingController: _descriptionController,
-                      labelText: 'Description',
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Date and Time Row
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Meeting Date',
-                                style: TextStyle(
-                                  color: textColor,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              InkWell(
-                                onTap: () => _selectDate(context),
-                                child: Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: Colors.grey),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(CupertinoIcons.calendar,
-                                          color: textColor),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        _selectedDate != null
-                                            ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
-                                            : 'Select Date',
-                                        style: TextStyle(color: textColor),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Start Time',
-                                style: TextStyle(
-                                  color: textColor,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              InkWell(
-                                onTap: () => _selectStartTime(context),
-                                child: Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: Colors.grey),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(CupertinoIcons.clock,
-                                          color: textColor),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        _selectedStartTime != null
-                                            ? _selectedStartTime!
-                                                .format(context)
-                                            : 'Select Time',
-                                        style: TextStyle(color: textColor),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // End Time
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'End Time (Optional)',
-                          style: TextStyle(
-                            color: textColor,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        InkWell(
-                          onTap: () => _selectEndTime(context),
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(CupertinoIcons.clock, color: textColor),
-                                const SizedBox(width: 8),
-                                Text(
-                                  _selectedEndTime != null
-                                      ? _selectedEndTime!.format(context)
-                                      : 'Select End Time (Optional)',
-                                  style: TextStyle(color: textColor),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Duration
-                    FormTextField(
-                      textEditingController: _durationController,
-                      labelText: 'Duration (Optional)',
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Status
-                    if (_statuses.isNotEmpty) ...[
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Status',
-                            style: TextStyle(
-                              color: textColor,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          DropdownButtonFormField<String>(
-                            value: _selectedStatus,
-                            decoration: InputDecoration(
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                            ),
-                            items: _statuses.map((status) {
-                              return DropdownMenuItem(
-                                value: status.id,
-                                child: Text(status.name),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                _selectedStatus = value;
-                              });
-                            },
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-
-                    // Notes
-                    FormTextField(
-                      textEditingController: _notesController,
-                      labelText: 'Notes (Optional)',
-                    ),
+                    _buildBasicInfoSection(),
+                    _buildDateTimeSection(),
+                    _buildStatusSection(),
+                    _buildAdditionalInfoSection(),
                     const SizedBox(height: 32),
 
                     // Action Buttons
@@ -539,6 +616,7 @@ class _EditMeetingPageState extends State<EditMeetingPage> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 50), // Bottom padding
                   ],
                 ),
               ),

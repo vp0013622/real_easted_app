@@ -10,12 +10,35 @@ class NotificationController extends ChangeNotifier {
   int _currentPage = 1;
   bool _hasMorePages = true;
 
+  // Constructor to initialize data
+  NotificationController() {
+    // Load initial data
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      getNotifications();
+      getUnreadCount();
+    });
+  }
+
   // Getters
   List<NotificationModel> get notifications => _notifications;
   int get unreadCount => _unreadCount;
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get hasMorePages => _hasMorePages;
+
+  // Today's notifications count
+  int get todayNotificationsCount {
+    final today = DateTime.now();
+    final startOfDay = DateTime(today.year, today.month, today.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+
+    final count = _notifications.where((notification) {
+      final createdAt = notification.createdAt;
+      return createdAt.isAfter(startOfDay) && createdAt.isBefore(endOfDay);
+    }).length;
+
+    return count;
+  }
 
   // Get all notifications
   Future<void> getNotifications({bool refresh = false}) async {
@@ -38,9 +61,20 @@ class NotificationController extends ChangeNotifier {
 
       if (result['statusCode'] == 200) {
         final List<dynamic> notificationsData = result['data'] ?? [];
+        print(
+            '🔍 [DEBUG] Notifications data received: ${notificationsData.length} items');
+        print('🔍 [DEBUG] Notifications data: $notificationsData');
+
         final List<NotificationModel> newNotifications = notificationsData
             .map((json) => NotificationModel.fromJson(json))
             .toList();
+
+        print(
+            '🔍 [DEBUG] Parsed notifications: ${newNotifications.length} items');
+        for (int i = 0; i < newNotifications.length; i++) {
+          print(
+              '🔍 [DEBUG] Notification $i: ${newNotifications[i].title} - ${newNotifications[i].message}');
+        }
 
         if (refresh) {
           _notifications = newNotifications;
@@ -119,6 +153,28 @@ class NotificationController extends ChangeNotifier {
     }
   }
 
+  // Mark notification as unread
+  Future<void> markAsUnread(String notificationId) async {
+    try {
+      final result =
+          await NotificationService.markNotificationAsUnread(notificationId);
+
+      if (result['statusCode'] == 200) {
+        // Update the notification in the list
+        final index = _notifications.indexWhere((n) => n.id == notificationId);
+        if (index != -1) {
+          _notifications[index] = _notifications[index].copyWith(isRead: false);
+          _updateUnreadCount();
+          notifyListeners();
+        }
+      } else {
+        _setError(result['message'] ?? 'Failed to mark notification as unread');
+      }
+    } catch (e) {
+      _setError('Error marking notification as unread: $e');
+    }
+  }
+
   // Mark all notifications as read
   Future<void> markAllAsRead() async {
     try {
@@ -175,6 +231,23 @@ class NotificationController extends ChangeNotifier {
     } catch (e) {
       // Silently handle error for unread count
       print('Error getting unread count: $e');
+    }
+  }
+
+  // Create meeting reminder notifications
+  Future<void> createMeetingReminders() async {
+    try {
+      final result = await NotificationService.createMeetingReminders();
+
+      if (result['statusCode'] == 200) {
+        print('Meeting reminder notifications created successfully');
+        // Optionally refresh notifications after creating reminders
+        await getNotifications(refresh: true);
+      } else {
+        _setError(result['message'] ?? 'Failed to create meeting reminders');
+      }
+    } catch (e) {
+      _setError('Error creating meeting reminders: $e');
     }
   }
 

@@ -7,6 +7,8 @@ import 'package:inhabit_realties/controllers/file/userProfilePictureController.d
 import 'package:inhabit_realties/models/auth/UsersModel.dart';
 import 'package:inhabit_realties/pages/widgets/appSpinner.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../widgets/appSnackBar.dart';
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 
 class PropertyContactSection extends StatefulWidget {
   final PropertyModel property;
@@ -188,32 +190,33 @@ class _PropertyContactSectionState extends State<PropertyContactSection> {
                           if (phone.isNotEmpty) {
                             final uri = Uri.parse('tel:$phone');
                             if (await canLaunchUrl(uri)) {
-                              final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+                              final launched = await launchUrl(uri,
+                                  mode: LaunchMode.externalApplication);
                               if (!launched && context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Could not launch dialer'),
-                                    backgroundColor: Colors.red,
-                                  ),
+                                AppSnackBar.showSnackBar(
+                                  context,
+                                  'Error',
+                                  'Could not launch dialer',
+                                  ContentType.failure,
                                 );
                               }
                             } else {
                               if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Could not launch dialer'),
-                                    backgroundColor: Colors.red,
-                                  ),
+                                AppSnackBar.showSnackBar(
+                                  context,
+                                  'Error',
+                                  'Could not launch dialer',
+                                  ContentType.failure,
                                 );
                               }
                             }
                           } else {
                             if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Phone number not available'),
-                                  backgroundColor: Colors.orange,
-                                ),
+                              AppSnackBar.showSnackBar(
+                                context,
+                                'Warning',
+                                'Phone number not available',
+                                ContentType.warning,
                               );
                             }
                           }
@@ -236,37 +239,39 @@ class _PropertyContactSectionState extends State<PropertyContactSection> {
                             // Try multiple SMS schemes for better Android compatibility
                             final smsUri = Uri.parse('sms:$phone');
                             final smsToUri = Uri.parse('sms:$phone?body=');
-                            
+
                             bool launched = false;
-                            
+
                             // Try the first format
                             if (await canLaunchUrl(smsUri)) {
-                              launched = await launchUrl(smsUri, mode: LaunchMode.externalApplication);
+                              launched = await launchUrl(smsUri,
+                                  mode: LaunchMode.externalApplication);
                             }
-                            
+
                             // If first format fails, try the second format
                             if (!launched && await canLaunchUrl(smsToUri)) {
-                              launched = await launchUrl(smsToUri, mode: LaunchMode.externalApplication);
+                              launched = await launchUrl(smsToUri,
+                                  mode: LaunchMode.externalApplication);
                             }
-                            
+
                             if (!launched) {
                               if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Could not launch messaging app'),
-                                    backgroundColor: Colors.red,
-                                  ),
+                                AppSnackBar.showSnackBar(
+                                  context,
+                                  'Error',
+                                  'Could not launch messaging app',
+                                  ContentType.failure,
                                 );
                               }
                             }
-                            } else {
+                          } else {
                             if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Phone number not available'),
-                                  backgroundColor: Colors.orange,
-                                ),
-                            );
+                              AppSnackBar.showSnackBar(
+                                context,
+                                'Warning',
+                                'Phone number not available',
+                                ContentType.warning,
+                              );
                             }
                           }
                         },

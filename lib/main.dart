@@ -20,7 +20,7 @@ import 'package:inhabit_realties/pages/documents/user_documents_page.dart';
 import 'package:inhabit_realties/pages/documents/all_documents_page.dart';
 import 'package:inhabit_realties/pages/documents/user_documents_detail_page.dart';
 import 'package:inhabit_realties/pages/leads/assigned_leads_page.dart';
-import 'package:inhabit_realties/pages/reports/reports_page.dart';
+
 import 'package:inhabit_realties/pages/settings/settings_page.dart';
 import 'package:inhabit_realties/pages/profile/activity_details_page.dart';
 import 'package:inhabit_realties/pages/properties/favorite_properties_page.dart';
@@ -33,6 +33,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'package:inhabit_realties/controllers/favoriteProperty/favoritePropertyController.dart';
 import 'package:inhabit_realties/controllers/notification/notificationController.dart';
+import 'package:inhabit_realties/controllers/lead/leadsController.dart';
 import 'package:inhabit_realties/providers/theme_provider.dart';
 import 'package:inhabit_realties/pages/meetingSchedule/meeting_details_page.dart';
 import 'package:inhabit_realties/pages/meetingSchedule/edit_meeting_page.dart';
@@ -63,6 +64,7 @@ class _MainAppState extends State<MainApp> {
         ChangeNotifierProvider(create: (_) => FavoritePropertyController()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => NotificationController()),
+        ChangeNotifierProvider(create: (_) => LeadsController()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -115,7 +117,6 @@ class _MainAppState extends State<MainApp> {
               '/documents': (context) => const UserDocumentsPage(),
               '/documents/all': (context) => const AllDocumentsPage(),
               '/leads/assigned': (context) => const AssignedLeadsPage(),
-              '/reports': (context) => const ReportsPage(),
               '/settings': (context) => const SettingsPage(),
               '/favorite_properties': (context) =>
                   const FavoritePropertiesPage(),

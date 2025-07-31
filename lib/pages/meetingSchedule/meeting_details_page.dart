@@ -6,10 +6,14 @@ import 'package:inhabit_realties/controllers/user/userController.dart';
 import 'package:inhabit_realties/services/property/propertyService.dart';
 import 'package:inhabit_realties/models/auth/UsersModel.dart';
 import 'package:inhabit_realties/models/property/PropertyModel.dart';
+import 'package:inhabit_realties/models/meetingSchedule/MeetingScheduleStatusModel.dart';
+import 'package:inhabit_realties/controllers/meeting_schedule_status/meeting_schedule_status_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:inhabit_realties/pages/meetingSchedule/edit_meeting_page.dart';
 import 'package:inhabit_realties/services/meeting_schedule_service.dart';
+import '../widgets/appSnackBar.dart';
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 
 class MeetingDetailsPage extends StatefulWidget {
   final MeetingSchedule meeting;
@@ -25,10 +29,13 @@ class _MeetingDetailsPageState extends State<MeetingDetailsPage>
   final UserController _userController = UserController();
   final PropertyService _propertyService = PropertyService();
   final MeetingScheduleService _meetingService = MeetingScheduleService();
+  final MeetingScheduleStatusController _meetingScheduleStatusController =
+      MeetingScheduleStatusController();
 
   UsersModel? _customer;
   UsersModel? _scheduledBy;
   PropertyModel? _property;
+  MeetingScheduleStatusModel? _status;
   bool _isLoading = true;
 
   late AnimationController _animationController;
@@ -119,6 +126,34 @@ class _MeetingDetailsPageState extends State<MeetingDetailsPage>
         } catch (e) {
           print('Error loading property: $e');
         }
+      }
+
+      // Load status data
+      try {
+        final response = await _meetingScheduleStatusController
+            .getAllMeetingScheduleStatuses();
+        if (response['statusCode'] == 200 && response['data'] != null) {
+          final statuses = (response['data'] as List)
+              .map((json) => MeetingScheduleStatusModel.fromJson(json))
+              .toList();
+
+          // Find the status by ID
+          final status = statuses.firstWhere(
+            (s) => s.id == widget.meeting.status.toString(),
+            orElse: () => MeetingScheduleStatusModel(
+              id: widget.meeting.status.toString(),
+              name: 'Unknown',
+              description: 'Unknown status',
+              statusCode: 0,
+              createdByUserId: '',
+              updatedByUserId: '',
+              published: true,
+            ),
+          );
+          _status = status;
+        }
+      } catch (e) {
+        print('Error loading status: $e');
       }
 
       setState(() {
@@ -391,11 +426,11 @@ class _MeetingDetailsPageState extends State<MeetingDetailsPage>
                     }
                   } catch (e) {
                     print('Error navigating to edit page: $e'); // Debug print
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Error opening edit page: $e'),
-                        backgroundColor: AppColors.lightDanger,
-                      ),
+                    AppSnackBar.showSnackBar(
+                      context,
+                      'Error',
+                      'Error opening edit page: $e',
+                      ContentType.failure,
                     );
                   }
                 },
@@ -465,11 +500,13 @@ class _MeetingDetailsPageState extends State<MeetingDetailsPage>
                       _buildInfoCard(
                         title: 'Meeting Status',
                         icon: CupertinoIcons.info_circle,
-                        color: _getStatusColor(widget.meeting.getStatusName()),
+                        color: _getStatusColor(
+                            _status?.name ?? widget.meeting.getStatusName()),
                         content: Row(
                           children: [
                             Text(
-                              _getStatusIcon(widget.meeting.getStatusName()),
+                              _getStatusIcon(_status?.name ??
+                                  widget.meeting.getStatusName()),
                               style: const TextStyle(fontSize: 28),
                             ),
                             const SizedBox(width: 16),
@@ -478,20 +515,20 @@ class _MeetingDetailsPageState extends State<MeetingDetailsPage>
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    widget.meeting
-                                        .getStatusName()
+                                    (_status?.name ??
+                                            widget.meeting.getStatusName())
                                         .toUpperCase(),
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
-                                      color: _getStatusColor(
+                                      color: _getStatusColor(_status?.name ??
                                           widget.meeting.getStatusName()),
                                       letterSpacing: 0.5,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    'Meeting is ${widget.meeting.getStatusName().toLowerCase()}',
+                                    'Meeting is ${(_status?.name ?? widget.meeting.getStatusName()).toLowerCase()}',
                                     style: TextStyle(
                                       fontSize: 14,
                                       color: textColor.withOpacity(0.7),
@@ -681,12 +718,11 @@ class _MeetingDetailsPageState extends State<MeetingDetailsPage>
                           } catch (e) {
                             print(
                                 'Error navigating to reschedule page: $e'); // Debug print
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content:
-                                    Text('Error opening reschedule page: $e'),
-                                backgroundColor: AppColors.lightDanger,
-                              ),
+                            AppSnackBar.showSnackBar(
+                              context,
+                              'Error',
+                              'Error opening reschedule page: $e',
+                              ContentType.failure,
                             );
                           }
                         },
@@ -745,12 +781,11 @@ class _MeetingDetailsPageState extends State<MeetingDetailsPage>
                               print(
                                   'Meeting deleted successfully'); // Debug print
                               if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content:
-                                        Text('Meeting cancelled successfully'),
-                                    backgroundColor: AppColors.lightDanger,
-                                  ),
+                                AppSnackBar.showSnackBar(
+                                  context,
+                                  'Success',
+                                  'Meeting cancelled successfully',
+                                  ContentType.success,
                                 );
                                 Navigator.pop(context, true);
                               }
@@ -758,12 +793,11 @@ class _MeetingDetailsPageState extends State<MeetingDetailsPage>
                               print(
                                   'Error cancelling meeting: $e'); // Debug print
                               if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content:
-                                        Text('Error cancelling meeting: $e'),
-                                    backgroundColor: AppColors.lightDanger,
-                                  ),
+                                AppSnackBar.showSnackBar(
+                                  context,
+                                  'Error',
+                                  'Error cancelling meeting: $e',
+                                  ContentType.failure,
                                 );
                               }
                             }

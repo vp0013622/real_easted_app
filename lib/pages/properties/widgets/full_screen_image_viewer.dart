@@ -3,6 +3,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:inhabit_realties/constants/contants.dart';
 import 'package:inhabit_realties/models/property/PropertyImageModel.dart';
+import '../../widgets/appSnackBar.dart';
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 
 class FullScreenImageViewer extends StatefulWidget {
   final List<PropertyImageModel> images;
@@ -94,11 +96,11 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
                 // Copy to clipboard
                 // Note: You might want to add clipboard functionality
                 Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('Image URL copied to clipboard'),
-                    backgroundColor: AppColors.brandPrimary,
-                  ),
+                AppSnackBar.showSnackBar(
+                  context,
+                  'Success',
+                  'Image URL copied to clipboard',
+                  ContentType.success,
                 );
               },
               child: const Text('Copy URL'),

@@ -6,6 +6,9 @@ import 'package:inhabit_realties/models/lead/LeadsModel.dart';
 import 'package:inhabit_realties/pages/leads/lead_details_page.dart';
 import 'package:inhabit_realties/pages/widgets/appSpinner.dart';
 import 'package:inhabit_realties/pages/widgets/profile_avatar.dart';
+import 'package:inhabit_realties/widgets/notification_badge.dart';
+import 'package:provider/provider.dart';
+import 'package:inhabit_realties/controllers/notification/notificationController.dart';
 
 class AssignedLeadsPage extends StatefulWidget {
   const AssignedLeadsPage({super.key});
@@ -117,6 +120,7 @@ class _AssignedLeadsPageState extends State<AssignedLeadsPage> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
+          const NotificationBadgeWithLoading(),
           IconButton(
             icon: Icon(
               Icons.refresh,

@@ -3,6 +3,8 @@ import 'package:inhabit_realties/constants/contants.dart';
 import 'package:inhabit_realties/models/lead/LeadsModel.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:inhabit_realties/controllers/lead/leadsController.dart';
+import '../../widgets/appSnackBar.dart';
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:provider/provider.dart';
 
 class LeadContactSection extends StatelessWidget {
@@ -55,22 +57,34 @@ class LeadContactSection extends StatelessWidget {
         );
         final result = await leadsController.editLead(updatedLead);
         if (result) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Marked as Contacted')),
+          AppSnackBar.showSnackBar(
+            context,
+            'Success',
+            'Marked as Contacted',
+            ContentType.success,
           );
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to update status')),
+          AppSnackBar.showSnackBar(
+            context,
+            'Error',
+            'Failed to update status',
+            ContentType.failure,
           );
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not launch dialer')),
+        AppSnackBar.showSnackBar(
+          context,
+          'Error',
+          'Could not launch dialer',
+          ContentType.failure,
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+      AppSnackBar.showSnackBar(
+        context,
+        'Error',
+        'Error: $e',
+        ContentType.failure,
       );
     }
   }

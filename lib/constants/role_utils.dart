@@ -237,7 +237,7 @@ class RoleUtils {
       }
 
       // Routes accessible to all authenticated users
-      if (path == '/reports' || path == '/settings' || path == '/auth/logout') {
+      if (path == '/settings' || path == '/auth/logout') {
         return true;
       }
 
@@ -267,8 +267,7 @@ class RoleUtils {
     }
 
     // Routes accessible to all authenticated users
-    if (route == '/reports' ||
-        route == '/settings' ||
+    if (route == '/settings' ||
         route == '/auth/logout') {
       return true;
     }

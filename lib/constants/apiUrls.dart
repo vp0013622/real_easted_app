@@ -132,10 +132,13 @@ class ApiUrls {
   static String get deleteNotificationById => '$baseUrl/notifications/delete/';
   static String get getUserNotifications => '$baseUrl/notifications/user/';
   static String get markNotificationAsRead => '$baseUrl/notifications/read/';
+  static String get markNotificationAsUnread => '$baseUrl/notifications/unread/';
   static String get markAllNotificationsAsRead =>
       '$baseUrl/notifications/read-all/';
   static String get deleteNotification => '$baseUrl/notifications/delete/';
   static String get getUnreadCount => '$baseUrl/notifications/unread-count/';
   static String get createTestNotification =>
       '$baseUrl/notifications/test/create';
+  static String get createMeetingReminders =>
+      '$baseUrl/notifications/meeting-reminders';
 }

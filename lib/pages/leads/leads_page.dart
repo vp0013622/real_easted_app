@@ -18,6 +18,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:inhabit_realties/providers/leads_page_provider.dart';
 import 'package:inhabit_realties/constants/status_utils.dart';
+import 'package:inhabit_realties/controllers/notification/notificationController.dart';
+import 'package:provider/provider.dart';
 
 class LeadsPage extends StatefulWidget {
   const LeadsPage({super.key});
@@ -628,6 +630,30 @@ class _LeadsPageState extends State<LeadsPage> with TickerProviderStateMixin {
                             ),
                           ),
                           _buildStatusChip(lead.leadStatus),
+                          const SizedBox(width: 8),
+                          // Notification indicator
+                          Consumer<NotificationController>(
+                            builder: (context, notificationController, child) {
+                              final hasUnreadNotifications =
+                                  notificationController.notifications
+                                      .where((notification) =>
+                                          notification.relatedId == lead.id &&
+                                          !notification.isRead)
+                                      .isNotEmpty;
+
+                              if (hasUnreadNotifications) {
+                                return Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.brandPrimary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                );
+                              }
+                              return const SizedBox.shrink();
+                            },
+                          ),
                         ],
                       ),
                       const SizedBox(height: 8),

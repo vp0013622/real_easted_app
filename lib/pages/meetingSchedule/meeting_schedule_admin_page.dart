@@ -4,6 +4,8 @@ import 'package:inhabit_realties/constants/contants.dart';
 import 'package:inhabit_realties/models/meeting_schedule_model.dart';
 import 'package:inhabit_realties/services/meeting_schedule_service.dart';
 import 'package:inhabit_realties/constants/apiUrls.dart';
+import '../widgets/appSnackBar.dart';
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 
 class MeetingScheduleAdminPage extends StatefulWidget {
   const MeetingScheduleAdminPage({super.key});
@@ -64,6 +66,7 @@ class _MeetingScheduleAdminPageState extends State<MeetingScheduleAdminPage> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'meeting_admin_add_button',
         onPressed: () async {
           final result = await Navigator.pushNamed(context, '/create_meeting');
           if (result == true) {
@@ -148,8 +151,8 @@ class _MeetingScheduleAdminPageState extends State<MeetingScheduleAdminPage> {
                               leading: CircleAvatar(
                                 backgroundColor:
                                     _getStatusColor(meeting.getStatusName()),
-                                                                  child: Icon(
-                                    _getStatusIcon(meeting.getStatusName()),
+                                child: Icon(
+                                  _getStatusIcon(meeting.getStatusName()),
                                   color: Colors.white,
                                 ),
                               ),
@@ -267,12 +270,18 @@ class _MeetingScheduleAdminPageState extends State<MeetingScheduleAdminPage> {
               try {
                 await _meetingService.deleteMeeting(meeting.id);
                 _loadMeetings();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Meeting deleted successfully')),
+                AppSnackBar.showSnackBar(
+                  context,
+                  'Success',
+                  'Meeting deleted successfully',
+                  ContentType.success,
                 );
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error deleting meeting: $e')),
+                AppSnackBar.showSnackBar(
+                  context,
+                  'Error',
+                  'Error deleting meeting: $e',
+                  ContentType.failure,
                 );
               }
             },

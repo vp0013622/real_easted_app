@@ -13,6 +13,8 @@ import 'package:inhabit_realties/pages/widgets/appCard.dart';
 import 'package:inhabit_realties/pages/widgets/appSpinner.dart';
 import 'package:inhabit_realties/pages/widgets/app_search_bar.dart';
 import 'package:inhabit_realties/providers/property_page_provider.dart';
+import '../widgets/appSnackBar.dart';
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:inhabit_realties/pages/properties/property_details_page.dart';
 import 'package:inhabit_realties/controllers/favoriteProperty/favoritePropertyController.dart';
 import 'package:provider/provider.dart';
@@ -189,14 +191,14 @@ class _PropertyPageState extends State<PropertiesPage>
 
   String _getFormattedAddressString(Address address) {
     final List<String> addressParts = [];
-    
+
     if (address.street.isNotEmpty) addressParts.add(address.street);
     if (address.area.isNotEmpty) addressParts.add(address.area);
     if (address.city.isNotEmpty) addressParts.add(address.city);
     if (address.state.isNotEmpty) addressParts.add(address.state);
     if (address.zipOrPinCode.isNotEmpty) addressParts.add(address.zipOrPinCode);
     if (address.country.isNotEmpty) addressParts.add(address.country);
-    
+
     return addressParts.join(', ');
   }
 
@@ -568,11 +570,11 @@ class _PropertyPageState extends State<PropertiesPage>
       } else {}
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to update favorite status: $e'),
-            backgroundColor: Colors.red,
-          ),
+        AppSnackBar.showSnackBar(
+          context,
+          'Error',
+          'Failed to update favorite status: $e',
+          ContentType.failure,
         );
       }
     }
@@ -585,63 +587,63 @@ class _PropertyPageState extends State<PropertiesPage>
         isDark ? AppColors.darkBackground : AppColors.lightBackground;
 
     return Scaffold(
-        backgroundColor: backgroundColor,
-        appBar: AppAppBar(
-          onToggleFavorites: () {
-            setState(() {
-              _showFavoritesOnly = !_showFavoritesOnly;
-            });
-            _filterProperties();
-          },
-          showFavoritesOnly: _showFavoritesOnly,
-        ),
-        body: isInitialLoading
-            ? const Center(child: AppSpinner(size: 32.0, strokeWidth: 3.0))
-            : RefreshIndicator(
-                onRefresh: _loadData,
-                child: Column(
-                  children: [
-                    _buildHeader(),
-                    _buildPropertyTypesList(),
-                    _buildSearchBar(),
-                    const SizedBox(height: 8),
-                    if (filteredProperties.isEmpty)
-                      Expanded(
-                        child: Center(
-                          child: Text(
-                            'No properties found',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyLarge
-                                ?.copyWith(color: AppColors.greyColor),
-                          ),
-                        ),
-                      )
-                    else
-                      Expanded(
-                        child: CustomScrollView(
-                          physics: const BouncingScrollPhysics(),
-                          slivers: [
-                            SliverPadding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                              ),
-                              sliver: SliverList(
-                                delegate: SliverChildBuilderDelegate(
-                                  (context, index) => Padding(
-                                    padding: const EdgeInsets.only(bottom: 20),
-                                    child: _buildPropertyCard(context, index),
-                                  ),
-                                  childCount: filteredProperties.length,
-                                ),
-                              ),
-                            ),
-                          ],
+      backgroundColor: backgroundColor,
+      appBar: AppAppBar(
+        onToggleFavorites: () {
+          setState(() {
+            _showFavoritesOnly = !_showFavoritesOnly;
+          });
+          _filterProperties();
+        },
+        showFavoritesOnly: _showFavoritesOnly,
+      ),
+      body: isInitialLoading
+          ? const Center(child: AppSpinner(size: 32.0, strokeWidth: 3.0))
+          : RefreshIndicator(
+              onRefresh: _loadData,
+              child: Column(
+                children: [
+                  _buildHeader(),
+                  _buildPropertyTypesList(),
+                  _buildSearchBar(),
+                  const SizedBox(height: 8),
+                  if (filteredProperties.isEmpty)
+                    Expanded(
+                      child: Center(
+                        child: Text(
+                          'No properties found',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyLarge
+                              ?.copyWith(color: AppColors.greyColor),
                         ),
                       ),
-                  ],
+                    )
+                  else
+                    Expanded(
+                      child: CustomScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        slivers: [
+                          SliverPadding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                            ),
+                            sliver: SliverList(
+                              delegate: SliverChildBuilderDelegate(
+                                (context, index) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 20),
+                                  child: _buildPropertyCard(context, index),
+                                ),
+                                childCount: filteredProperties.length,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
               ),
-      ),
+            ),
     );
   }
 

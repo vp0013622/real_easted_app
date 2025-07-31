@@ -46,8 +46,21 @@ class MeetingScheduleService {
         throw Exception('No authentication token found');
       }
 
+      // Get current user ID from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final userJson = prefs.getString('currentUser');
+      if (userJson == null) {
+        throw Exception('No current user found');
+      }
+
+      final userData = json.decode(userJson);
+      final userId = userData['_id'] ?? userData['id'];
+      if (userId == null) {
+        throw Exception('No user ID found in current user data');
+      }
+
       final response = await http.get(
-        Uri.parse(ApiUrls.getMyMeetings),
+        Uri.parse('${ApiUrls.getMyMeetings}$userId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -102,13 +115,18 @@ class MeetingScheduleService {
   Future<MeetingSchedule> updateMeeting(
       String id, Map<String, dynamic> meetingData) async {
     try {
+      print('DEBUG: Starting meeting update service call...'); // Debug print
       final token = await _getToken();
       if (token == null) {
         throw Exception('No authentication token found');
       }
 
+      final url = '${ApiUrls.editMeetingSchedule}$id';
+      print('DEBUG: Update URL: $url'); // Debug print
+      print('DEBUG: Meeting data: $meetingData'); // Debug print
+
       final response = await http.put(
-        Uri.parse('${ApiUrls.editMeetingSchedule}$id'),
+        Uri.parse(url),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -116,13 +134,39 @@ class MeetingScheduleService {
         body: json.encode(meetingData),
       );
 
-      if (response.statusCode == 200) {
+      print('DEBUG: Response status: ${response.statusCode}'); // Debug print
+      print('DEBUG: Response body: ${response.body}'); // Debug print
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
         final Map<String, dynamic> data = json.decode(response.body);
-        return MeetingSchedule.fromJson(data['data']);
+        // If there's no data field, return a mock meeting object
+        if (data['data'] != null) {
+          return MeetingSchedule.fromJson(data['data']);
+        } else {
+          // Return a mock meeting object since the backend doesn't return the updated data
+          return MeetingSchedule(
+            id: id,
+            title: meetingData['title'] ?? '',
+            description: meetingData['description'] ?? '',
+            meetingDate: meetingData['meetingDate'] ?? '',
+            startTime: meetingData['startTime'] ?? '',
+            endTime: meetingData['endTime'],
+            duration: meetingData['duration'],
+            status: meetingData['status'] ?? '',
+            scheduledByUserId: meetingData['scheduledByUserId'] ?? '',
+            customerId: meetingData['customerId'] ?? '',
+            propertyId: meetingData['propertyId'],
+            notes: meetingData['notes'] ?? '',
+            createdByUserId: meetingData['createdByUserId'] ?? '',
+            updatedByUserId: meetingData['updatedByUserId'] ?? '',
+            published: true,
+          );
+        }
       } else {
         throw Exception('Failed to update meeting: ${response.statusCode}');
       }
     } catch (e) {
+      print('DEBUG: Service error: $e'); // Debug print
       throw Exception('Error updating meeting: $e');
     }
   }
@@ -173,7 +217,8 @@ class MeetingScheduleService {
             .map((json) => MeetingSchedule.fromJson(json))
             .toList();
       } else {
-        throw Exception('Failed to load not published meetings: ${response.statusCode}');
+        throw Exception(
+            'Failed to load not published meetings: ${response.statusCode}');
       }
     } catch (e) {
       throw Exception('Error loading not published meetings: $e');
@@ -200,7 +245,8 @@ class MeetingScheduleService {
         final Map<String, dynamic> data = json.decode(response.body);
         return MeetingSchedule.fromJson(data['data']);
       } else {
-        throw Exception('Failed to load meeting schedule: ${response.statusCode}');
+        throw Exception(
+            'Failed to load meeting schedule: ${response.statusCode}');
       }
     } catch (e) {
       throw Exception('Error loading meeting schedule: $e');

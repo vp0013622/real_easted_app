@@ -36,15 +36,28 @@ class NotificationModel {
   });
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
+    print('🔍 [DEBUG] Parsing notification JSON: $json');
+
     // Handle both old single recipientId and new recipientIds array
     List<String> recipientIds = [];
     if (json['recipientIds'] != null) {
-      // New format: array of recipient IDs
-      recipientIds = List<String>.from(json['recipientIds']);
+      // New format: array of recipient IDs (can be strings or objects with _id)
+      if (json['recipientIds'] is List) {
+        for (var recipient in json['recipientIds']) {
+          if (recipient is String) {
+            recipientIds.add(recipient);
+          } else if (recipient is Map<String, dynamic> &&
+              recipient['_id'] != null) {
+            recipientIds.add(recipient['_id']);
+          }
+        }
+      }
     } else if (json['recipientId'] != null) {
       // Old format: single recipient ID
       recipientIds = [json['recipientId']];
     }
+
+    print('🔍 [DEBUG] Parsed recipientIds: $recipientIds');
 
     return NotificationModel(
       id: json['_id'] ?? '',
@@ -52,15 +65,17 @@ class NotificationModel {
       type: json['type'] ?? '',
       title: json['title'] ?? '',
       message: json['message'] ?? '',
-      relatedId: json['relatedId'],
+      relatedId: json['relatedId'] is String
+          ? json['relatedId']
+          : json['relatedId']?['_id'],
       relatedModel: json['relatedModel'],
       data: json['data'] ?? {},
       isRead: json['isRead'] ?? false,
       priority: json['priority'] ?? 'medium',
       expiresAt:
           json['expiresAt'] != null ? DateTime.parse(json['expiresAt']) : null,
-      createdByUserId: json['createdByUserId'] ?? '',
-      updatedByUserId: json['updatedByUserId'] ?? '',
+      createdByUserId: json['createdByUserId'] is String ? json['createdByUserId'] : json['createdByUserId']?['_id'] ?? '',
+      updatedByUserId: json['updatedByUserId'] is String ? json['updatedByUserId'] : json['updatedByUserId']?['_id'] ?? '',
       published: json['published'] ?? true,
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),

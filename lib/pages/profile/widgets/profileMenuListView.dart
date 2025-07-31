@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:inhabit_realties/constants/contants.dart';
 import 'package:inhabit_realties/constants/profileMenuList.dart';
 import 'package:inhabit_realties/pages/profile/widgets/profileListTile.dart';
+import 'package:provider/provider.dart';
+import 'package:inhabit_realties/controllers/notification/notificationController.dart';
 
 class ProfileMenuListView extends StatefulWidget {
   final int assignedLeadsCount;
@@ -31,6 +33,31 @@ class _ProfileMenuListViewState extends State<ProfileMenuListView> {
         int? trailingNumberLabel = item['title'] == 'Assigned Leads'
             ? widget.assignedLeadsCount
             : item['trailingNumberLabel'];
+            
+        // If this is the Notifications item, use the unread count
+        if (item['title'] == 'Notifications') {
+          return Consumer<NotificationController>(
+            builder: (context, notificationController, child) {
+              // Load unread count if not already loaded
+              if (notificationController.unreadCount == 0 && !notificationController.isLoading) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  notificationController.getUnreadCount();
+                });
+              }
+              
+              return ProfileListTile(
+                path: item['path'],
+                icon: item['icon'],
+                title: item['title'],
+                trailingNumberLabel: notificationController.unreadCount > 0 ? notificationController.unreadCount : null,
+                color: isLogout
+                    ? (isDark ? AppColors.darkDanger : AppColors.lightDanger)
+                    : defaultColor,
+                showBottomRadius: isLastItem,
+              );
+            },
+          );
+        }
 
         return ProfileListTile(
           path: item['path'],

@@ -16,6 +16,10 @@ import 'package:inhabit_realties/pages/dashboard/user_analytics_page.dart';
 import 'package:inhabit_realties/services/dashboard/dashboardService.dart';
 import 'package:inhabit_realties/providers/theme_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:inhabit_realties/controllers/notification/notificationController.dart';
+import 'package:inhabit_realties/controllers/lead/leadsController.dart';
+import 'package:inhabit_realties/services/meeting_schedule_service.dart';
+import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
   final VoidCallback onToggleTheme;
@@ -115,7 +119,7 @@ class _HomePageState extends State<HomePage>
           child: SlideTransition(
             position: _slideAnimation,
             child: Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(16),
@@ -191,7 +195,7 @@ class _HomePageState extends State<HomePage>
                                   width: 1,
                                 ),
                               ),
-                              child: Icon(icon, color: color, size: 22),
+                              child: Icon(icon, color: color, size: 20),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -206,15 +210,15 @@ class _HomePageState extends State<HomePage>
                                           ? AppColors.darkWhiteText
                                           : AppColors.lightDarkText,
                                       fontWeight: FontWeight.w600,
-                                      fontSize: 16,
+                                      fontSize: 14,
                                     ),
-                                maxLines: 1,
+                                maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 16),
                         // Value
                         Text(
                           value,
@@ -224,7 +228,7 @@ class _HomePageState extends State<HomePage>
                               ?.copyWith(
                                 color: color,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 28,
+                                fontSize: 36,
                               ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -645,7 +649,7 @@ class _HomePageState extends State<HomePage>
                           crossAxisCount: 2,
                           crossAxisSpacing: 15,
                           mainAxisSpacing: 15,
-                          childAspectRatio: 0.85,
+                          childAspectRatio: 0.75,
                           children: [
                             GestureDetector(
                               onTap: () {
@@ -753,6 +757,54 @@ class _HomePageState extends State<HomePage>
                                 subtitle: 'Pending tasks',
                               ),
                             ),
+                            // Today's Notifications
+                            Consumer<NotificationController>(
+                              builder:
+                                  (context, notificationController, child) {
+                                return _buildStatCard(
+                                  CupertinoIcons.bell,
+                                  'Today\'s Notifications',
+                                  notificationController.todayNotificationsCount
+                                      .toString(),
+                                  AppColors.brandPrimary,
+                                  false,
+                                  subtitle: 'New notifications',
+                                );
+                              },
+                            ),
+                            // Today's Inquiries
+                            Consumer<LeadsController>(
+                              builder: (context, leadsController, child) {
+                                return _buildStatCard(
+                                  CupertinoIcons.question_circle,
+                                  'Today\'s Inquiries',
+                                  leadsController.todayInquiriesCount
+                                      .toString(),
+                                  AppColors.lightSuccess,
+                                  false,
+                                  subtitle: 'New leads',
+                                );
+                              },
+                            ),
+                            // Today's & Tomorrow's Schedules
+                            _buildStatCard(
+                              CupertinoIcons.calendar,
+                              'Today\'s Schedules',
+                              _dashboardController.todaySchedulesCount
+                                  .toString(),
+                              AppColors.lightWarning,
+                              _dashboardController.isLoading,
+                              subtitle: 'Meetings scheduled',
+                            ),
+                            _buildStatCard(
+                              CupertinoIcons.calendar_today,
+                              'Tomorrow\'s Schedules',
+                              _dashboardController.tomorrowSchedulesCount
+                                  .toString(),
+                              AppColors.lightPrimary,
+                              _dashboardController.isLoading,
+                              subtitle: 'Upcoming meetings',
+                            ),
                           ],
                         ),
                         const SizedBox(height: 30),
@@ -792,6 +844,7 @@ class _HomePageState extends State<HomePage>
           ),
           drawer: const AppDrawer(),
           floatingActionButton: FloatingActionButton(
+            heroTag: 'home_refresh_button',
             onPressed: _refreshDashboard,
             backgroundColor: AppColors.brandPrimary,
             child: const Icon(

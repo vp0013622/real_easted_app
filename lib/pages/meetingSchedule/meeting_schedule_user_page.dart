@@ -4,12 +4,15 @@ import 'package:inhabit_realties/constants/contants.dart';
 import 'package:inhabit_realties/models/meeting_schedule_model.dart';
 import 'package:inhabit_realties/models/auth/UsersModel.dart';
 import 'package:inhabit_realties/models/property/PropertyModel.dart';
+import 'package:inhabit_realties/models/meetingSchedule/MeetingScheduleStatusModel.dart';
 import 'package:inhabit_realties/services/meeting_schedule_service.dart';
 import 'package:inhabit_realties/controllers/user/userController.dart';
 import 'package:inhabit_realties/controllers/role/roleController.dart';
+import 'package:inhabit_realties/controllers/meeting_schedule_status/meeting_schedule_status_controller.dart';
 import 'package:inhabit_realties/services/property/propertyService.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'widgets/meeting_type_container.dart';
 
 class MeetingScheduleUserPage extends StatefulWidget {
   const MeetingScheduleUserPage({super.key});
@@ -25,14 +28,27 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
   final UserController _userController = UserController();
   final PropertyService _propertyService = PropertyService();
   final RoleController _roleController = RoleController();
+  final MeetingScheduleStatusController _meetingScheduleStatusController =
+      MeetingScheduleStatusController();
 
   List<MeetingSchedule> _meetings = [];
-  List<MeetingSchedule> _allMeetings = [];
+  List<MeetingSchedule> _filteredMeetings = [];
   Map<String, UsersModel> _userCache = {};
   Map<String, PropertyModel> _propertyCache = {};
+  Map<String, MeetingScheduleStatusModel> _statusCache = {};
   bool _isLoading = true;
   String? _error;
   bool _showScheduledMeetings = false;
+
+  // Meeting type filter
+  List<String> _meetingTypes = [
+    'ALL',
+    'SCHEDULED',
+    'COMPLETED',
+    'CANCELLED',
+    'RESCHEDULED'
+  ];
+  int _selectedTypeIndex = 0;
 
   late AnimationController _animationController;
   late AnimationController _staggerController;
@@ -76,6 +92,66 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
     super.dispose();
   }
 
+  Widget _buildMeetingTypesList() {
+    return Container(
+      height: 50,
+      margin: const EdgeInsets.only(bottom: 16),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: _meetingTypes.length,
+        itemBuilder: (context, index) {
+          return Padding(
+            padding: EdgeInsets.only(
+              left: index == 0 ? 20 : 8,
+              right: index == _meetingTypes.length - 1 ? 20 : 8,
+            ),
+            child: InkWell(
+              onTap: () {
+                setState(() {
+                  _selectedTypeIndex = index;
+                });
+                _filterMeetingsByType();
+              },
+              child: MeetingTypeContainer(
+                isActive: index == _selectedTypeIndex,
+                type: _meetingTypes[index],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _filterMeetingsByType() {
+    print('DEBUG: Filtering meetings by type: ${_meetingTypes[_selectedTypeIndex]}');
+    print('DEBUG: Total meetings: ${_meetings.length}');
+    print('DEBUG: Status cache keys: ${_statusCache.keys.toList()}');
+    
+    setState(() {
+      if (_selectedTypeIndex == 0) {
+        // Show all meetings
+        _filteredMeetings = List.from(_meetings);
+        print('DEBUG: Showing all meetings: ${_filteredMeetings.length}');
+      } else {
+        // Filter by status
+        final selectedType = _meetingTypes[_selectedTypeIndex];
+        _filteredMeetings = _meetings.where((meeting) {
+          final status = _statusCache[meeting.status.toString()];
+          print('DEBUG: Meeting ${meeting.id} status: ${meeting.status} -> ${status?.name}');
+          if (status != null) {
+            final matches = status.name.toUpperCase() == selectedType;
+            print('DEBUG: Status ${status.name} matches ${selectedType}: $matches');
+            return matches;
+          }
+          return false;
+        }).toList();
+        print('DEBUG: Filtered meetings count: ${_filteredMeetings.length}');
+      }
+    });
+  }
+
   Future<void> _loadMyMeetings() async {
     try {
       setState(() {
@@ -98,17 +174,31 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
         throw Exception('User ID not found in user data');
       }
 
-      final allMeetings = await _meetingService.getAllMeetings();
-
-      print('DEBUG: Total meetings loaded: ${allMeetings.length}');
-      print('DEBUG: Current user ID: $currentUserId');
+      // Use getMyMeetings() for customer meetings and getAllMeetings() for scheduled meetings
+      List<MeetingSchedule> meetings;
+      if (_showScheduledMeetings) {
+        // For scheduled meetings, get all meetings and filter by scheduledByUserId
+        final allMeetings = await _meetingService.getAllMeetings();
+        meetings = allMeetings
+            .where((meeting) => meeting.scheduledByUserId == currentUserId)
+            .toList();
+        print('DEBUG: Total meetings loaded: ${allMeetings.length}');
+        print('DEBUG: Filtered scheduled meetings: ${meetings.length}');
+      } else {
+        // For customer meetings, use the optimized getMyMeetings() method
+        meetings = await _meetingService.getMyMeetings();
+        print('DEBUG: My meetings loaded: ${meetings.length}');
+      }
 
       setState(() {
-        _allMeetings = allMeetings;
-        _applyFilter(currentUserId);
+        _meetings = meetings;
+        _filteredMeetings = List.from(meetings);
         _isLoading = false;
       });
 
+      // Load associated data and then apply current filter
+      await _loadAssociatedData();
+      _filterMeetingsByType(); // Re-apply the current filter
       _animationController.forward();
     } catch (e) {
       setState(() {
@@ -118,22 +208,28 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
     }
   }
 
-  void _applyFilter(String currentUserId) {
-    if (_showScheduledMeetings) {
-      _meetings = _allMeetings
-          .where((meeting) => meeting.scheduledByUserId == currentUserId)
-          .toList();
-      print('DEBUG: Filtered scheduled meetings: ${_meetings.length}');
-    } else {
-      _meetings = _allMeetings
-          .where((meeting) => meeting.customerId == currentUserId)
-          .toList();
-      print('DEBUG: Filtered my meetings: ${_meetings.length}');
-    }
-    _loadAssociatedData();
-  }
-
   Future<void> _loadAssociatedData() async {
+    // First, load all statuses once to populate the cache
+    if (_statusCache.isEmpty) {
+      try {
+        final response = await _meetingScheduleStatusController
+            .getAllMeetingScheduleStatuses();
+        if (response['statusCode'] == 200 && response['data'] != null) {
+          final statuses = (response['data'] as List)
+              .map((json) => MeetingScheduleStatusModel.fromJson(json))
+              .toList();
+
+          // Populate status cache with all statuses
+          for (final status in statuses) {
+            _statusCache[status.id] = status;
+          }
+          print('DEBUG: Loaded ${statuses.length} statuses into cache');
+        }
+      } catch (e) {
+        print('Error loading statuses: $e');
+      }
+    }
+
     for (final meeting in _meetings) {
       // Load customer data
       if (!_userCache.containsKey(meeting.customerId)) {
@@ -178,6 +274,20 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
         } catch (e) {
           print('Error loading property: $e');
         }
+      }
+
+      // Ensure status is in cache (should already be there from the initial load)
+      if (!_statusCache.containsKey(meeting.status.toString())) {
+        print('DEBUG: Status not found in cache for ${meeting.status}, adding fallback');
+        _statusCache[meeting.status.toString()] = MeetingScheduleStatusModel(
+          id: meeting.status.toString(),
+          name: 'Unknown',
+          description: 'Unknown status',
+          statusCode: 0,
+          createdByUserId: '',
+          updatedByUserId: '',
+          published: true,
+        );
       }
     }
     setState(() {});
@@ -233,6 +343,7 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
     final scheduledBy = _userCache[meeting.scheduledByUserId];
     final property =
         meeting.propertyId != null ? _propertyCache[meeting.propertyId!] : null;
+    final status = _statusCache[meeting.status.toString()];
 
     return AnimatedBuilder(
       animation: _animationController,
@@ -300,6 +411,98 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Customer name section at the top (replacing document ID)
+                          if (customer != null)
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        AppColors.lightWarning.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Icon(
+                                    CupertinoIcons.person_crop_circle,
+                                    color: AppColors.lightWarning,
+                                    size: 16,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '${customer.firstName} ${customer.lastName}',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                          color: textColor,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Customer',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: textColor.withOpacity(0.6),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          if (customer != null) const SizedBox(height: 16),
+
+                          // Property information (replacing document ID)
+                          if (property != null)
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        AppColors.lightPrimary.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Icon(
+                                    CupertinoIcons.house,
+                                    color: AppColors.lightPrimary,
+                                    size: 16,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        property.name.isNotEmpty
+                                            ? property.name
+                                            : 'Property',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                          color: textColor,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Property',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: textColor.withOpacity(0.6),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          if (property != null) const SizedBox(height: 16),
+
                           // Header with status and gradient
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -324,14 +527,16 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  _getStatusIcon(meeting.getStatusName()),
+                                  _getStatusIcon(
+                                      status?.name ?? meeting.getStatusName()),
                                   style: const TextStyle(fontSize: 18),
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  meeting.getStatusName().toUpperCase(),
+                                  (status?.name ?? meeting.getStatusName())
+                                      .toUpperCase(),
                                   style: TextStyle(
-                                    color: _getStatusColor(
+                                    color: _getStatusColor(status?.name ??
                                         meeting.getStatusName()),
                                     fontWeight: FontWeight.bold,
                                     fontSize: 12,
@@ -383,7 +588,9 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      'ID: ${meeting.id}',
+                                      scheduledBy != null
+                                          ? 'Scheduled by: ${scheduledBy.firstName} ${scheduledBy.lastName}'
+                                          : 'Scheduled by: Unknown',
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: textColor.withOpacity(0.6),
@@ -444,7 +651,7 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
                           ),
                           const SizedBox(height: 16),
 
-                          // Customer information
+                          // Customer email information
                           if (customer != null)
                             Row(
                               children: [
@@ -456,7 +663,7 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Icon(
-                                    CupertinoIcons.person,
+                                    CupertinoIcons.mail,
                                     color: AppColors.lightSuccess,
                                     size: 16,
                                   ),
@@ -468,11 +675,11 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        '${customer.firstName} ${customer.lastName}',
+                                        'Contact Email',
                                         style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                          color: textColor,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          color: textColor.withOpacity(0.6),
                                         ),
                                       ),
                                       Text(
@@ -577,6 +784,8 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
                 onTap: () async {
                   setState(() {
                     _showScheduledMeetings = !_showScheduledMeetings;
+                    // Reset filter to "ALL" when switching views
+                    _selectedTypeIndex = 0;
                   });
 
                   // Get current user ID from SharedPreferences
@@ -587,7 +796,7 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
                     final currentUserId =
                         currentUserData['_id'] ?? currentUserData['id'];
                     if (currentUserId != null) {
-                      _applyFilter(currentUserId);
+                      _loadMyMeetings();
                     }
                   }
                 },
@@ -698,66 +907,76 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
                           child: const Text('Retry'),
                         ),
                       ],
-                    ),
-                  )
-                : _meetings.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(30),
-                              decoration: BoxDecoration(
-                                gradient: AppColors.brandGradient,
-                                borderRadius: BorderRadius.circular(30),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color:
-                                        AppColors.brandPrimary.withOpacity(0.3),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 10),
-                                  ),
-                                ],
-                              ),
-                              child: Icon(
-                                CupertinoIcons.calendar_badge_plus,
-                                color: Colors.white,
-                                size: 60,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            Text(
-                              'No meetings found',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: textColor,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              _showScheduledMeetings
-                                  ? 'You haven\'t scheduled any meetings yet'
-                                  : 'You don\'t have any meetings scheduled',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: textColor.withOpacity(0.7),
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      )
-                    : SlideTransition(
+                                          ),
+                    )
+                : SlideTransition(
                         position: _slideAnimation,
                         child: FadeTransition(
                           opacity: _fadeAnimation,
-                          child: ListView.builder(
-                            padding: const EdgeInsets.only(bottom: 100),
-                            itemCount: _meetings.length,
-                            itemBuilder: (context, index) {
-                              return _buildMeetingCard(_meetings[index], index);
-                            },
+                          child: Column(
+                            children: [
+                              _buildMeetingTypesList(),
+                              Expanded(
+                                child: _filteredMeetings.isEmpty
+                                    ? Center(
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.all(30),
+                                              decoration: BoxDecoration(
+                                                gradient: AppColors.brandGradient,
+                                                borderRadius: BorderRadius.circular(30),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color:
+                                                        AppColors.brandPrimary.withOpacity(0.3),
+                                                    blurRadius: 20,
+                                                    offset: const Offset(0, 10),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: Icon(
+                                                CupertinoIcons.calendar_badge_plus,
+                                                color: Colors.white,
+                                                size: 60,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 24),
+                                            Text(
+                                              'No meetings found',
+                                              style: TextStyle(
+                                                fontSize: 24,
+                                                fontWeight: FontWeight.bold,
+                                                color: textColor,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              _selectedTypeIndex == 0
+                                                  ? (_showScheduledMeetings
+                                                      ? 'You haven\'t scheduled any meetings yet'
+                                                      : 'You don\'t have any meetings scheduled')
+                                                  : 'No ${_meetingTypes[_selectedTypeIndex].toLowerCase()} meetings found',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                color: textColor.withOpacity(0.7),
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ],
+                                        ),
+                                      )
+                                    : ListView.builder(
+                                        padding: const EdgeInsets.only(bottom: 100),
+                                        itemCount: _filteredMeetings.length,
+                                        itemBuilder: (context, index) {
+                                          return _buildMeetingCard(
+                                              _filteredMeetings[index], index);
+                                        },
+                                      ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -780,6 +999,7 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
                 ],
               ),
               child: FloatingActionButton.extended(
+                heroTag: 'meeting_user_add_button',
                 backgroundColor: Colors.transparent,
                 elevation: 0,
                 onPressed: () {

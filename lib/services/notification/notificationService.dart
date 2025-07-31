@@ -33,7 +33,12 @@ class NotificationService {
       final token = await _getAuthToken();
       final userId = await _getCurrentUserId();
 
+      print('🔍 [DEBUG] Getting notifications for user: $userId');
+      print('🔍 [DEBUG] Token available: ${token != null}');
+
       if (token == null || userId == null) {
+        print(
+            '❌ [DEBUG] Authentication failed - token: ${token != null}, userId: $userId');
         return {
           'statusCode': 401,
           'message': 'Authentication required',
@@ -49,6 +54,8 @@ class NotificationService {
       final uri = Uri.parse('${ApiUrls.getUserNotifications}$userId')
           .replace(queryParameters: queryParams);
 
+      print('🔍 [DEBUG] Requesting URL: $uri');
+
       final response = await http.get(
         uri,
         headers: {
@@ -58,6 +65,9 @@ class NotificationService {
       );
 
       final responseData = jsonDecode(response.body);
+      print('🔍 [DEBUG] Response status: ${response.statusCode}');
+      print('🔍 [DEBUG] Response data: $responseData');
+
       return {
         'statusCode': response.statusCode,
         'message': responseData['message'] ?? 'No message',
@@ -103,6 +113,41 @@ class NotificationService {
       return {
         'statusCode': 500,
         'message': 'Error marking notification as read: $e',
+      };
+    }
+  }
+
+  // Mark notification as unread
+  static Future<Map<String, dynamic>> markNotificationAsUnread(
+      String notificationId) async {
+    try {
+      final token = await _getAuthToken();
+
+      if (token == null) {
+        return {
+          'statusCode': 401,
+          'message': 'Authentication required',
+        };
+      }
+
+      final response = await http.put(
+        Uri.parse('${ApiUrls.markNotificationAsUnread}$notificationId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      final responseData = jsonDecode(response.body);
+      return {
+        'statusCode': response.statusCode,
+        'message': responseData['message'] ?? 'No message',
+        'data': responseData['data'],
+      };
+    } catch (e) {
+      return {
+        'statusCode': 500,
+        'message': 'Error marking notification as unread: $e',
       };
     }
   }
@@ -207,6 +252,40 @@ class NotificationService {
       return {
         'statusCode': 500,
         'message': 'Error getting unread count: $e',
+      };
+    }
+  }
+
+  // Create meeting reminder notifications
+  static Future<Map<String, dynamic>> createMeetingReminders() async {
+    try {
+      final token = await _getAuthToken();
+
+      if (token == null) {
+        return {
+          'statusCode': 401,
+          'message': 'Authentication required',
+        };
+      }
+
+      final response = await http.post(
+        Uri.parse(ApiUrls.createMeetingReminders),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      final responseData = jsonDecode(response.body);
+      return {
+        'statusCode': response.statusCode,
+        'message': responseData['message'] ?? 'No message',
+        'data': responseData['data'],
+      };
+    } catch (e) {
+      return {
+        'statusCode': 500,
+        'message': 'Error creating meeting reminders: $e',
       };
     }
   }

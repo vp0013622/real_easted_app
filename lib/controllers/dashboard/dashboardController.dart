@@ -37,6 +37,10 @@ class DashboardController extends ChangeNotifier {
   List<String> get weekDays => _weekDays;
   List<Map<String, dynamic>> get recentActivities => _recentActivities;
 
+  // Schedule count getters
+  int get todaySchedulesCount => _dashboardData['todaySchedules'] ?? 0;
+  int get tomorrowSchedulesCount => _dashboardData['tomorrowSchedules'] ?? 0;
+
   // Test method to check token and SharedPreferences
   Future<void> debugTokenAndPreferences() async {
     // This method is kept for compatibility but doesn't print anything

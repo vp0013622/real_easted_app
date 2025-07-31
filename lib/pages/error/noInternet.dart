@@ -3,6 +3,8 @@ import 'package:inhabit_realties/constants/contants.dart';
 import 'package:inhabit_realties/controllers/permissions/internetConnection.dart';
 import 'package:inhabit_realties/providers/error_page_provider.dart';
 import 'package:lottie/lottie.dart';
+import '../widgets/appSnackBar.dart';
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 
 class NoInternet extends StatefulWidget {
   const NoInternet({super.key});
@@ -83,57 +85,11 @@ class _NoInternetState extends State<NoInternet> with TickerProviderStateMixin {
   }
 
   void _showErrorSnackbar() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.wifi_off_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'No Internet Connection',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      ErrorPageProvider.noInternetMessage,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.white.withOpacity(0.9),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        backgroundColor: AppColors.lightDanger.withOpacity(0.95),
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(16),
-        padding: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        duration: const Duration(seconds: 4),
-      ),
+    AppSnackBar.showSnackBar(
+      context,
+      'No Internet Connection',
+      ErrorPageProvider.noInternetMessage,
+      ContentType.failure,
     );
   }
 
@@ -189,12 +145,11 @@ class _NoInternetState extends State<NoInternet> with TickerProviderStateMixin {
                             style: Theme.of(
                               context,
                             ).textTheme.headlineSmall?.copyWith(
-                              color:
-                                  isDark
+                                  color: isDark
                                       ? AppColors.darkPrimary
                                       : AppColors.lightPrimary,
-                              fontWeight: FontWeight.bold,
-                            ),
+                                  fontWeight: FontWeight.bold,
+                                ),
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -205,9 +160,9 @@ class _NoInternetState extends State<NoInternet> with TickerProviderStateMixin {
                           style: Theme.of(
                             context,
                           ).textTheme.titleMedium?.copyWith(
-                            color: isDark ? Colors.white70 : Colors.black87,
-                            height: 1.4,
-                          ),
+                                color: isDark ? Colors.white70 : Colors.black87,
+                                height: 1.4,
+                              ),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 48),
@@ -240,42 +195,39 @@ class _NoInternetState extends State<NoInternet> with TickerProviderStateMixin {
                                 onTap: _isChecking ? null : _checkConnection,
                                 borderRadius: BorderRadius.circular(28),
                                 child: Center(
-                                  child:
-                                      _isChecking
-                                          ? const SizedBox(
-                                            width: 24,
-                                            height: 24,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2.5,
-                                              valueColor:
-                                                  AlwaysStoppedAnimation<Color>(
-                                                    Colors.white,
+                                  child: _isChecking
+                                      ? const SizedBox(
+                                          width: 24,
+                                          height: 24,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.5,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                              Colors.white,
+                                            ),
+                                          ),
+                                        )
+                                      : Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(
+                                              Icons.refresh_rounded,
+                                              color: Colors.white,
+                                              size: 22,
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Text(
+                                              ErrorPageProvider.retryButtonText,
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .titleMedium
+                                                  ?.copyWith(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.w600,
                                                   ),
                                             ),
-                                          )
-                                          : Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              const Icon(
-                                                Icons.refresh_rounded,
-                                                color: Colors.white,
-                                                size: 22,
-                                              ),
-                                              const SizedBox(width: 12),
-                                              Text(
-                                                ErrorPageProvider
-                                                    .retryButtonText,
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .titleMedium
-                                                    ?.copyWith(
-                                                      color: Colors.white,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                    ),
-                                              ),
-                                            ],
-                                          ),
+                                          ],
+                                        ),
                                 ),
                               ),
                             ),

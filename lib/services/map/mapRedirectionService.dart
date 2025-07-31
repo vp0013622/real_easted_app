@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:inhabit_realties/models/address/Address.dart';
+import '../../pages/widgets/appSnackBar.dart';
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 
 class MapRedirectionService {
   /// Redirect to Google Maps with directions from current location to property
@@ -201,11 +203,11 @@ class MapRedirectionService {
                 Navigator.pop(context);
                 final success = await redirectToGoogleMaps(propertyAddress);
                 if (!success && context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Could not open Google Maps'),
-                      backgroundColor: Colors.red,
-                    ),
+                  AppSnackBar.showSnackBar(
+                    context,
+                    'Error',
+                    'Could not open Google Maps',
+                    ContentType.failure,
                   );
                 }
               },
@@ -221,11 +223,11 @@ class MapRedirectionService {
                   Navigator.pop(context);
                   final success = await redirectToAppleMaps(propertyAddress);
                   if (!success && context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Could not open Apple Maps'),
-                        backgroundColor: Colors.red,
-                      ),
+                    AppSnackBar.showSnackBar(
+                      context,
+                      'Error',
+                      'Could not open Apple Maps',
+                      ContentType.failure,
                     );
                   }
                 },

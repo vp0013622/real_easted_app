@@ -26,6 +26,18 @@ class LeadsController extends ChangeNotifier {
   List<LeadStatusModel> get leadStatuses => _leadStatuses;
   List<FollowUpStatusModel> get followUpStatuses => _followUpStatuses;
   List<ReferenceSourceModel> get referenceSources => _referenceSources;
+  
+  // Today's inquiries count
+  int get todayInquiriesCount {
+    final today = DateTime.now();
+    final startOfDay = DateTime(today.year, today.month, today.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+    
+    return _leads.where((lead) {
+      final createdAt = lead.createdAt;
+      return createdAt.isAfter(startOfDay) && createdAt.isBefore(endOfDay);
+    }).length;
+  }
 
   // Helper method to get current user
   Future<Map<String, dynamic>> _getCurrentUser() async {

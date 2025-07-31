@@ -14,11 +14,6 @@ class DrawerMenuList {
       'title': 'My Favorite Properties',
     },
     {
-      'path': '/reports',
-      'icon': CupertinoIcons.doc_chart_fill,
-      'title': 'Reports',
-    },
-    {
       'path': '/meeting_schedules',
       'icon': CupertinoIcons.calendar,
       'title': 'Meeting Schedules',

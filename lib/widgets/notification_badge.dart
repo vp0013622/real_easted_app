@@ -46,7 +46,7 @@ class NotificationBadge extends StatelessWidget {
                       color: badgeColor ?? Colors.red,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    constraints: BoxConstraints(
+                    constraints: const BoxConstraints(
                       minWidth: 16,
                       minHeight: 16,
                     ),
@@ -89,13 +89,6 @@ class NotificationBadgeWithLoading extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<NotificationController>(
       builder: (context, controller, child) {
-        // Load unread count if not already loaded
-        if (controller.unreadCount == 0 && !controller.isLoading) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            controller.getUnreadCount();
-          });
-        }
-
         return GestureDetector(
           onTap: onTap ??
               () {
@@ -107,8 +100,8 @@ class NotificationBadgeWithLoading extends StatelessWidget {
               Icon(
                 Icons.notifications,
                 size: size,
-                color: Theme.of(context).brightness == Brightness.dark 
-                    ? Colors.white 
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
                     : Colors.black87,
               ),
               if (controller.unreadCount > 0)

@@ -7,6 +7,8 @@ import 'package:inhabit_realties/models/property/PropertyModel.dart';
 import 'package:inhabit_realties/models/lead/LeadsModel.dart';
 import 'package:inhabit_realties/models/auth/UsersModel.dart';
 import 'package:intl/intl.dart';
+import '../widgets/appSnackBar.dart';
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 
 class ReportsPage extends StatefulWidget {
   const ReportsPage({super.key});
@@ -588,18 +590,20 @@ class _ReportsPageState extends State<ReportsPage> {
   }
 
   void _exportReport() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Export functionality coming soon!'),
-      ),
+    AppSnackBar.showSnackBar(
+      context,
+      'Info',
+      'Export functionality coming soon!',
+      ContentType.help,
     );
   }
 
   void _shareReport() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Share functionality coming soon!'),
-      ),
+    AppSnackBar.showSnackBar(
+      context,
+      'Info',
+      'Share functionality coming soon!',
+      ContentType.help,
     );
   }
 }

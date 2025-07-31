@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:inhabit_realties/constants/contants.dart';
 import 'package:inhabit_realties/controllers/favoriteProperty/favoritePropertyController.dart';
+import '../../widgets/appSnackBar.dart';
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:provider/provider.dart';
 
 class FavoriteHeartButton extends StatefulWidget {
@@ -87,11 +89,11 @@ class _FavoriteHeartButtonState extends State<FavoriteHeartButton>
     } catch (e) {
       // Handle error silently or show snackbar
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to update favorite status: $e'),
-            backgroundColor: Colors.red,
-          ),
+        AppSnackBar.showSnackBar(
+          context,
+          'Error',
+          'Failed to update favorite status: $e',
+          ContentType.failure,
         );
       }
     } finally {

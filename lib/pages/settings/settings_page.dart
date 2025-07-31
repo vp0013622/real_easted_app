@@ -14,6 +14,8 @@ import 'widgets/theme_settings_section.dart';
 import 'widgets/app_settings_section.dart';
 import 'widgets/data_settings_section.dart';
 import 'widgets/about_section.dart';
+import '../widgets/appSnackBar.dart';
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({Key? key}) : super(key: key);
@@ -451,11 +453,11 @@ class _SettingsPageState extends State<SettingsPage> {
   void _exportSettings() {
     if (_settingsController.userSettings != null) {
       // In a real app, you would export to file or share
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Settings export feature coming soon!'),
-          backgroundColor: Colors.blue,
-        ),
+      AppSnackBar.showSnackBar(
+        context,
+        'Info',
+        'Settings export feature coming soon!',
+        ContentType.help,
       );
     }
   }
@@ -465,18 +467,18 @@ class _SettingsPageState extends State<SettingsPage> {
       // Save all settings to backend and local storage
       await _settingsController.saveAllSettings();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Settings saved successfully!'),
-          backgroundColor: Colors.green,
-        ),
+      AppSnackBar.showSnackBar(
+        context,
+        'Success',
+        'Settings saved successfully!',
+        ContentType.success,
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to save settings: $e'),
-          backgroundColor: Colors.red,
-        ),
+      AppSnackBar.showSnackBar(
+        context,
+        'Error',
+        'Failed to save settings: $e',
+        ContentType.failure,
       );
     }
   }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../constants/contants.dart';
 import 'settings_section.dart';
+import '../../widgets/appSnackBar.dart';
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 
 class DataSettingsSection extends StatefulWidget {
   final Map<String, dynamic> settings;
@@ -201,21 +203,21 @@ class _DataSettingsSectionState extends State<DataSettingsSection> {
 
   void _clearCache() {
     // In a real app, you would clear the cache here
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Cache cleared successfully!'),
-        backgroundColor: AppColors.lightSuccess,
-      ),
+    AppSnackBar.showSnackBar(
+      context,
+      'Success',
+      'Cache cleared successfully!',
+      ContentType.success,
     );
   }
 
   void _exportData() {
     // In a real app, you would export data here
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Data export feature coming soon!'),
-        backgroundColor: AppColors.brandPrimary,
-      ),
+    AppSnackBar.showSnackBar(
+      context,
+      'Info',
+      'Data export feature coming soon!',
+      ContentType.help,
     );
   }
 }
