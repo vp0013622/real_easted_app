@@ -14,6 +14,7 @@ import 'package:inhabit_realties/models/role/RolesModel.dart';
 import 'package:inhabit_realties/pages/widgets/appSnackBar.dart';
 import 'package:inhabit_realties/pages/widgets/formTextField.dart';
 import 'package:inhabit_realties/providers/register_page_provider.dart';
+import 'package:inhabit_realties/pages/users/add_user_address_page.dart';
 
 class EditUserPage extends StatefulWidget {
   const EditUserPage({super.key});
@@ -459,6 +460,8 @@ class _EditUserPageState extends State<EditUserPage> {
         isDark ? AppColors.darkBackground : AppColors.lightBackground;
     final cardBackgroundColor =
         isDark ? AppColors.darkCardBackground : AppColors.lightCardBackground;
+    final textColor =
+        isDark ? AppColors.darkWhiteText : AppColors.lightDarkText;
 
     return Stack(
       children: [
@@ -469,6 +472,45 @@ class _EditUserPageState extends State<EditUserPage> {
             backgroundColor: cardBackgroundColor,
             elevation: 0,
             centerTitle: true,
+            actions: [
+              TextButton(
+                onPressed: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AddUserAddressPage(user: user!),
+                    ),
+                  );
+                  if (result == true) {
+                    // Address was added successfully
+                    AppSnackBar.showSnackBar(
+                      context,
+                      'Success',
+                      'Address added successfully',
+                      ContentType.success,
+                    );
+                  }
+                },
+                child: Text(
+                  'Add Address',
+                  style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              if (!isLoading)
+                TextButton(
+                  onPressed: _handleSubmit,
+                  child: Text(
+                    RegisterPageProvider.saveChanges,
+                    style: TextStyle(
+                      color: textColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+            ],
           ),
           body: SafeArea(
             child: Form(

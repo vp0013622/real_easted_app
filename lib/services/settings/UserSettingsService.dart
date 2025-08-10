@@ -10,25 +10,17 @@ class UserSettingsService implements UserSettingsInterface {
 
   @override
   Future<UserSettingsModel?> getUserSettings(String userId) async {
-    print(
-        '🔍 [DEBUG] UserSettingsService.getUserSettings called with userId: $userId');
-
     try {
       // Try to get from local storage first
       final prefs = await SharedPreferences.getInstance();
       final settingsJson = prefs.getString('user_settings_$userId');
 
       if (settingsJson != null) {
-        print('🔍 [DEBUG] Found settings in local storage');
         final data = json.decode(settingsJson);
         return UserSettingsModel.fromJson(data);
       }
 
       // If not in local storage, try backend
-      print('🔍 [DEBUG] No local settings, trying backend...');
-      print('🔍 [DEBUG] Base URL: $baseUrl');
-      print('🔍 [DEBUG] Full URL: $baseUrl/settings/$userId');
-
       final response = await http.get(
         Uri.parse('$baseUrl/settings/$userId'),
         headers: {
@@ -36,25 +28,17 @@ class UserSettingsService implements UserSettingsInterface {
         },
       );
 
-      print('🔍 [DEBUG] GET response status: ${response.statusCode}');
-
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true && data['data'] != null) {
-          print('🔍 [DEBUG] Successfully got settings from backend');
           return UserSettingsModel.fromJson(data['data']);
         }
       } else if (response.statusCode == 404) {
-        print(
-            '🔍 [DEBUG] Settings not found in backend (404), will create default');
         return null;
       }
 
-      print('🔍 [DEBUG] Backend not available, using default settings');
       return null;
     } catch (e) {
-      print('❌ [DEBUG] Exception in getUserSettings: $e');
-      print('🔍 [DEBUG] Using default settings due to error');
       return null;
     }
   }
@@ -105,22 +89,18 @@ class UserSettingsService implements UserSettingsInterface {
           body: json.encode(requestBody),
         );
 
-        print('🔍 [DEBUG] POST response status: ${response.statusCode}');
-
         if (response.statusCode == 201) {
           final data = json.decode(response.body);
           if (data['success'] == true && data['data'] != null) {
-            print('🔍 [DEBUG] Successfully created settings in backend');
             return UserSettingsModel.fromJson(data['data']);
           }
         }
       } catch (e) {
-        print('🔍 [DEBUG] Backend not available, using local storage only: $e');
+        // Backend not available, using local storage only
       }
 
       return defaultSettings;
     } catch (e) {
-      print('❌ [DEBUG] Exception in createUserSettings: $e');
       rethrow;
     }
   }
@@ -133,7 +113,6 @@ class UserSettingsService implements UserSettingsInterface {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(
           'user_settings_$userId', json.encode(settings.toJson()));
-      print('🔍 [DEBUG] Updated settings in local storage');
 
       // Try to update in backend (optional)
       try {
@@ -154,17 +133,15 @@ class UserSettingsService implements UserSettingsInterface {
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
           if (data['success'] == true && data['data'] != null) {
-            print('🔍 [DEBUG] Successfully updated settings in backend');
             return UserSettingsModel.fromJson(data['data']);
           }
         }
       } catch (e) {
-        print('🔍 [DEBUG] Backend not available, using local storage only: $e');
+        // Backend not available, using local storage only
       }
 
       return settings;
     } catch (e) {
-      print('❌ [DEBUG] Exception in updateUserSettings: $e');
       rethrow;
     }
   }

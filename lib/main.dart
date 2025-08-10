@@ -16,6 +16,7 @@ import 'package:inhabit_realties/pages/splash_page.dart';
 import 'package:inhabit_realties/pages/users/editUser_page.dart';
 import 'package:inhabit_realties/pages/users/users_page.dart';
 import 'package:inhabit_realties/pages/users/user_details_page.dart';
+import 'package:inhabit_realties/pages/users/add_user_address_page.dart';
 import 'package:inhabit_realties/pages/documents/user_documents_page.dart';
 import 'package:inhabit_realties/pages/documents/all_documents_page.dart';
 import 'package:inhabit_realties/pages/documents/user_documents_detail_page.dart';

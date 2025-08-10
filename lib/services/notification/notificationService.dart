@@ -33,12 +33,7 @@ class NotificationService {
       final token = await _getAuthToken();
       final userId = await _getCurrentUserId();
 
-      print('🔍 [DEBUG] Getting notifications for user: $userId');
-      print('🔍 [DEBUG] Token available: ${token != null}');
-
       if (token == null || userId == null) {
-        print(
-            '❌ [DEBUG] Authentication failed - token: ${token != null}, userId: $userId');
         return {
           'statusCode': 401,
           'message': 'Authentication required',
@@ -54,8 +49,6 @@ class NotificationService {
       final uri = Uri.parse('${ApiUrls.getUserNotifications}$userId')
           .replace(queryParameters: queryParams);
 
-      print('🔍 [DEBUG] Requesting URL: $uri');
-
       final response = await http.get(
         uri,
         headers: {
@@ -65,8 +58,6 @@ class NotificationService {
       );
 
       final responseData = jsonDecode(response.body);
-      print('🔍 [DEBUG] Response status: ${response.statusCode}');
-      print('🔍 [DEBUG] Response data: $responseData');
 
       return {
         'statusCode': response.statusCode,

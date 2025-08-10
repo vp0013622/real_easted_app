@@ -125,10 +125,11 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
   }
 
   void _filterMeetingsByType() {
-    print('DEBUG: Filtering meetings by type: ${_meetingTypes[_selectedTypeIndex]}');
+    print(
+        'DEBUG: Filtering meetings by type: ${_meetingTypes[_selectedTypeIndex]}');
     print('DEBUG: Total meetings: ${_meetings.length}');
     print('DEBUG: Status cache keys: ${_statusCache.keys.toList()}');
-    
+
     setState(() {
       if (_selectedTypeIndex == 0) {
         // Show all meetings
@@ -138,11 +139,22 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
         // Filter by status
         final selectedType = _meetingTypes[_selectedTypeIndex];
         _filteredMeetings = _meetings.where((meeting) {
-          final status = _statusCache[meeting.status.toString()];
-          print('DEBUG: Meeting ${meeting.id} status: ${meeting.status} -> ${status?.name}');
+          // Handle status properly - it can be a string ID or an object
+          String statusKey;
+          if (meeting.status is Map<String, dynamic>) {
+            final statusObj = meeting.status as Map<String, dynamic>;
+            statusKey = statusObj['_id'] ?? statusObj['id'] ?? '';
+          } else {
+            statusKey = meeting.status.toString();
+          }
+          
+          final status = _statusCache[statusKey];
+          print(
+              'DEBUG: Meeting ${meeting.id} status: ${meeting.status} -> ${status?.name}');
           if (status != null) {
             final matches = status.name.toUpperCase() == selectedType;
-            print('DEBUG: Status ${status.name} matches ${selectedType}: $matches');
+            print(
+                'DEBUG: Status ${status.name} matches ${selectedType}: $matches');
             return matches;
           }
           return false;
@@ -276,18 +288,38 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
         }
       }
 
-      // Ensure status is in cache (should already be there from the initial load)
-      if (!_statusCache.containsKey(meeting.status.toString())) {
-        print('DEBUG: Status not found in cache for ${meeting.status}, adding fallback');
-        _statusCache[meeting.status.toString()] = MeetingScheduleStatusModel(
-          id: meeting.status.toString(),
-          name: 'Unknown',
-          description: 'Unknown status',
-          statusCode: 0,
-          createdByUserId: '',
-          updatedByUserId: '',
-          published: true,
-        );
+      // Handle status properly - it can be a string ID or an object
+      String statusKey;
+      MeetingScheduleStatusModel? statusModel;
+      
+      if (meeting.status is Map<String, dynamic>) {
+        // Status is an object, extract the ID
+        final statusObj = meeting.status as Map<String, dynamic>;
+        statusKey = statusObj['_id'] ?? statusObj['id'] ?? '';
+        statusModel = MeetingScheduleStatusModel.fromJson(statusObj);
+        print('DEBUG: Status is object, key: $statusKey, name: ${statusModel.name}');
+      } else {
+        // Status is a string ID
+        statusKey = meeting.status.toString();
+        print('DEBUG: Status is string, key: $statusKey');
+      }
+      
+      if (!_statusCache.containsKey(statusKey)) {
+        if (statusModel != null) {
+          _statusCache[statusKey] = statusModel;
+          print('DEBUG: Added status to cache: ${statusModel.name}');
+        } else {
+          print('DEBUG: Status not found in cache for $statusKey, adding fallback');
+          _statusCache[statusKey] = MeetingScheduleStatusModel(
+            id: statusKey,
+            name: 'Unknown',
+            description: 'Unknown status',
+            statusCode: 0,
+            createdByUserId: '',
+            updatedByUserId: '',
+            published: true,
+          );
+        }
       }
     }
     setState(() {});
@@ -343,7 +375,16 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
     final scheduledBy = _userCache[meeting.scheduledByUserId];
     final property =
         meeting.propertyId != null ? _propertyCache[meeting.propertyId!] : null;
-    final status = _statusCache[meeting.status.toString()];
+    
+    // Handle status properly - it can be a string ID or an object
+    MeetingScheduleStatusModel? status;
+    if (meeting.status is Map<String, dynamic>) {
+      final statusObj = meeting.status as Map<String, dynamic>;
+      final statusKey = statusObj['_id'] ?? statusObj['id'] ?? '';
+      status = _statusCache[statusKey];
+    } else {
+      status = _statusCache[meeting.status.toString()];
+    }
 
     return AnimatedBuilder(
       animation: _animationController,
@@ -907,79 +948,81 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
                           child: const Text('Retry'),
                         ),
                       ],
-                                          ),
-                    )
+                    ),
+                  )
                 : SlideTransition(
-                        position: _slideAnimation,
-                        child: FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: Column(
-                            children: [
-                              _buildMeetingTypesList(),
-                              Expanded(
-                                child: _filteredMeetings.isEmpty
-                                    ? Center(
-                                        child: Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Container(
-                                              padding: const EdgeInsets.all(30),
-                                              decoration: BoxDecoration(
-                                                gradient: AppColors.brandGradient,
-                                                borderRadius: BorderRadius.circular(30),
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color:
-                                                        AppColors.brandPrimary.withOpacity(0.3),
-                                                    blurRadius: 20,
-                                                    offset: const Offset(0, 10),
-                                                  ),
-                                                ],
+                    position: _slideAnimation,
+                    child: FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: Column(
+                        children: [
+                          _buildMeetingTypesList(),
+                          Expanded(
+                            child: _filteredMeetings.isEmpty
+                                ? Center(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(30),
+                                          decoration: BoxDecoration(
+                                            gradient: AppColors.brandGradient,
+                                            borderRadius:
+                                                BorderRadius.circular(30),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: AppColors.brandPrimary
+                                                    .withOpacity(0.3),
+                                                blurRadius: 20,
+                                                offset: const Offset(0, 10),
                                               ),
-                                              child: Icon(
-                                                CupertinoIcons.calendar_badge_plus,
-                                                color: Colors.white,
-                                                size: 60,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 24),
-                                            Text(
-                                              'No meetings found',
-                                              style: TextStyle(
-                                                fontSize: 24,
-                                                fontWeight: FontWeight.bold,
-                                                color: textColor,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              _selectedTypeIndex == 0
-                                                  ? (_showScheduledMeetings
-                                                      ? 'You haven\'t scheduled any meetings yet'
-                                                      : 'You don\'t have any meetings scheduled')
-                                                  : 'No ${_meetingTypes[_selectedTypeIndex].toLowerCase()} meetings found',
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                color: textColor.withOpacity(0.7),
-                                              ),
-                                              textAlign: TextAlign.center,
-                                            ),
-                                          ],
+                                            ],
+                                          ),
+                                          child: Icon(
+                                            CupertinoIcons.calendar_badge_plus,
+                                            color: Colors.white,
+                                            size: 60,
+                                          ),
                                         ),
-                                      )
-                                    : ListView.builder(
-                                        padding: const EdgeInsets.only(bottom: 100),
-                                        itemCount: _filteredMeetings.length,
-                                        itemBuilder: (context, index) {
-                                          return _buildMeetingCard(
-                                              _filteredMeetings[index], index);
-                                        },
-                                      ),
-                              ),
-                            ],
+                                        const SizedBox(height: 24),
+                                        Text(
+                                          'No meetings found',
+                                          style: TextStyle(
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.bold,
+                                            color: textColor,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          _selectedTypeIndex == 0
+                                              ? (_showScheduledMeetings
+                                                  ? 'You haven\'t scheduled any meetings yet'
+                                                  : 'You don\'t have any meetings scheduled')
+                                              : 'No ${_meetingTypes[_selectedTypeIndex].toLowerCase()} meetings found',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            color: textColor.withOpacity(0.7),
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                : ListView.builder(
+                                    padding: const EdgeInsets.only(bottom: 100),
+                                    itemCount: _filteredMeetings.length,
+                                    itemBuilder: (context, index) {
+                                      return _buildMeetingCard(
+                                          _filteredMeetings[index], index);
+                                    },
+                                  ),
                           ),
-                        ),
+                        ],
                       ),
+                    ),
+                  ),
       ),
       floatingActionButton: AnimatedBuilder(
         animation: _animationController,

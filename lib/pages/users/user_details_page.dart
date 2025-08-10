@@ -91,7 +91,7 @@ class _UserDetailsPageState extends State<UserDetailsPage>
               _role = RolesModel.fromJson(roleResponse['data']);
             }
           } catch (e) {
-            print('Error loading role: $e');
+            // Error loading role
           }
         }
       } else {

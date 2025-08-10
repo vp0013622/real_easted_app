@@ -31,10 +31,6 @@ class DashboardService {
   static Future<Map<String, dynamic>> getPropertyAnalytics(String token,
       [String timeFrame = '12M']) async {
     try {
-      print('DashboardService: Calling property analytics API...');
-      print(
-          'DashboardService: URL: $baseUrl/dashboard/properties/analytics?timeFrame=$timeFrame');
-
       final response = await http.get(
         Uri.parse(
             '$baseUrl/dashboard/properties/analytics?timeFrame=$timeFrame'),
@@ -44,20 +40,13 @@ class DashboardService {
         },
       );
 
-      print('DashboardService: Response status code: ${response.statusCode}');
-      print('DashboardService: Response body: ${response.body}');
-
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body);
-        print('DashboardService: Parsed response: $jsonResponse');
         return jsonResponse;
       } else {
-        print(
-            'DashboardService: Error response: ${response.statusCode} - ${response.body}');
         throw Exception('Failed to load property analytics');
       }
     } catch (e) {
-      print('DashboardService: Exception caught: $e');
       throw Exception('Error: $e');
     }
   }

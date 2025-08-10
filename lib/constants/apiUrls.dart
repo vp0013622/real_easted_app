@@ -141,4 +141,12 @@ class ApiUrls {
       '$baseUrl/notifications/test/create';
   static String get createMeetingReminders =>
       '$baseUrl/notifications/meeting-reminders';
+
+  //user addresses
+  static String get getAllUserAddresses => '$baseUrl/useraddress';
+  static String get getUserAddressById => '$baseUrl/useraddress/';
+  static String get getUserAddressByUserId => '$baseUrl/useraddress/user/';
+  static String get createUserAddress => '$baseUrl/useraddress/create';
+  static String get updateUserAddress => '$baseUrl/useraddress/edit/';
+  static String get deleteUserAddress => '$baseUrl/useraddress/delete/';
 }

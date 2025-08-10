@@ -62,6 +62,27 @@ class Address {
       'location': location.toJson(),
     };
   }
+
+  /// Get full address as string
+  String get fullAddress {
+    List<String> parts = [];
+    if (street.isNotEmpty) parts.add(street);
+    if (area.isNotEmpty) parts.add(area);
+    if (city.isNotEmpty) parts.add(city);
+    if (state.isNotEmpty) parts.add(state);
+    if (zipOrPinCode.isNotEmpty) parts.add(zipOrPinCode);
+    if (country.isNotEmpty) parts.add(country);
+    return parts.join(', ');
+  }
+
+  /// Get short address (city, state, country)
+  String get shortAddress {
+    List<String> parts = [];
+    if (city.isNotEmpty) parts.add(city);
+    if (state.isNotEmpty) parts.add(state);
+    if (country.isNotEmpty) parts.add(country);
+    return parts.join(', ');
+  }
 }
 
 class Location {

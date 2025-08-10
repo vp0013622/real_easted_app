@@ -16,13 +16,6 @@ class MeetingScheduleStatusController {
         throw Exception('No authentication token found');
       }
 
-      // Debug: Check current user
-      final prefs = await SharedPreferences.getInstance();
-      final currentUser = prefs.getString('currentUser');
-      print('DEBUG: Current user: $currentUser'); // Debug log
-      print('DEBUG: Token length: ${token.length}'); // Debug log
-      print('DEBUG: Token: ${token.substring(0, 20)}...'); // Debug log
-
       final response = await http.get(
         Uri.parse(ApiUrls.getAllMeetingScheduleStatuses),
         headers: {
@@ -30,9 +23,6 @@ class MeetingScheduleStatusController {
           'Authorization': 'Bearer $token',
         },
       );
-
-      print('DEBUG: Response status: ${response.statusCode}'); // Debug log
-      print('DEBUG: Response body: ${response.body}'); // Debug log
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);

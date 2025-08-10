@@ -36,8 +36,6 @@ class NotificationModel {
   });
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
-    print('🔍 [DEBUG] Parsing notification JSON: $json');
-
     // Handle both old single recipientId and new recipientIds array
     List<String> recipientIds = [];
     if (json['recipientIds'] != null) {
@@ -56,8 +54,6 @@ class NotificationModel {
       // Old format: single recipient ID
       recipientIds = [json['recipientId']];
     }
-
-    print('🔍 [DEBUG] Parsed recipientIds: $recipientIds');
 
     return NotificationModel(
       id: json['_id'] ?? '',

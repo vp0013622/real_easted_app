@@ -115,15 +115,12 @@ class MeetingScheduleService {
   Future<MeetingSchedule> updateMeeting(
       String id, Map<String, dynamic> meetingData) async {
     try {
-      print('DEBUG: Starting meeting update service call...'); // Debug print
       final token = await _getToken();
       if (token == null) {
         throw Exception('No authentication token found');
       }
 
       final url = '${ApiUrls.editMeetingSchedule}$id';
-      print('DEBUG: Update URL: $url'); // Debug print
-      print('DEBUG: Meeting data: $meetingData'); // Debug print
 
       final response = await http.put(
         Uri.parse(url),
@@ -133,9 +130,6 @@ class MeetingScheduleService {
         },
         body: json.encode(meetingData),
       );
-
-      print('DEBUG: Response status: ${response.statusCode}'); // Debug print
-      print('DEBUG: Response body: ${response.body}'); // Debug print
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final Map<String, dynamic> data = json.decode(response.body);
@@ -166,7 +160,6 @@ class MeetingScheduleService {
         throw Exception('Failed to update meeting: ${response.statusCode}');
       }
     } catch (e) {
-      print('DEBUG: Service error: $e'); // Debug print
       throw Exception('Error updating meeting: $e');
     }
   }
