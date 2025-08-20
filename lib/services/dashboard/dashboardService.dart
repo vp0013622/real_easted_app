@@ -137,6 +137,27 @@ class DashboardService {
     }
   }
 
+  // Get today's schedules
+  static Future<Map<String, dynamic>> getTodaySchedules(String token) async {
+    try {
+      final response = await http.get(
+        Uri.parse(ApiUrls.getTodaySchedules),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to load today\'s schedules');
+      }
+    } catch (e) {
+      throw Exception('Error: $e');
+    }
+  }
+
   // Get weekly performance
   static Future<Map<String, dynamic>> getWeeklyPerformance(String token) async {
     try {

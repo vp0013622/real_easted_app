@@ -149,4 +149,8 @@ class ApiUrls {
   static String get createUserAddress => '$baseUrl/useraddress/create';
   static String get updateUserAddress => '$baseUrl/useraddress/edit/';
   static String get deleteUserAddress => '$baseUrl/useraddress/delete/';
+
+  //dashboard
+  static String get getDashboardOverview => '$baseUrl/dashboard/overview';
+  static String get getTodaySchedules => '$baseUrl/dashboard/today-schedules';
 }

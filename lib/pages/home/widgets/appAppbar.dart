@@ -1,7 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'package:inhabit_realties/constants/contants.dart';
 import 'package:inhabit_realties/widgets/notification_badge.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AppAppbar extends StatefulWidget implements PreferredSizeWidget {
   final VoidCallback? onToggleTheme;
@@ -15,6 +17,46 @@ class AppAppbar extends StatefulWidget implements PreferredSizeWidget {
 }
 
 class _AppappbarState extends State<AppAppbar> {
+  String? _currentUserRole;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentUserRole();
+  }
+
+  Future<void> _loadCurrentUserRole() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final currentUserJson = prefs.getString('currentUser');
+
+      if (currentUserJson != null) {
+        final userData = json.decode(currentUserJson);
+        _currentUserRole = userData['role']?['name'] ??
+            userData['role'] ??
+            userData['roleId']?['name'] ??
+            userData['roleId'];
+
+        if (mounted) {
+          setState(() {});
+        }
+      }
+    } catch (e) {
+      // Handle error silently
+    }
+  }
+
+    bool _canCreateMeetings() {
+    if (_currentUserRole == null) {
+      return false;
+    }
+    
+    final role = _currentUserRole!.toLowerCase();
+    final canCreate = role == 'admin' || role == 'sales' || role == 'executive';
+    
+    return canCreate;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;

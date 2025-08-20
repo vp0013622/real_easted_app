@@ -62,9 +62,7 @@ class _PropertyAnalyticsPageState extends State<PropertyAnalyticsPage>
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token') ?? '';
 
-      print('PropertyAnalytics: Token length: ${token.length}');
-      print(
-          'PropertyAnalytics: Token starts with: ${token.isNotEmpty ? token.substring(0, 20) + '...' : 'empty'}');
+
 
       if (token.isEmpty) {
         throw Exception('Authentication token not found. Please log in again.');
@@ -81,12 +79,12 @@ class _PropertyAnalyticsPageState extends State<PropertyAnalyticsPage>
         });
         _animationController.forward();
       } else {
-        print('PropertyAnalytics: Error response: $response');
+
         throw Exception(
             response['message'] ?? 'Failed to load property analytics');
       }
     } catch (e) {
-      print('PropertyAnalytics: Exception caught: $e');
+
       if (!mounted) return;
       setState(() {
         _error = e.toString();

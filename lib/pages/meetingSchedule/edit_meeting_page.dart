@@ -139,13 +139,12 @@ class _EditMeetingPageState extends State<EditMeetingPage> {
   }
 
   Future<void> _updateMeeting() async {
-    print('DEBUG: Starting meeting update...'); // Debug print
+
     if (!_formKey.currentState!.validate()) {
-      print('DEBUG: Form validation failed'); // Debug print
-      return;
-    }
+              return;
+      }
     if (_selectedDate == null || _selectedStartTime == null) {
-      print('DEBUG: Date or start time is null'); // Debug print
+
       AppSnackBar.showSnackBar(
         context,
         'Error',
@@ -177,12 +176,11 @@ class _EditMeetingPageState extends State<EditMeetingPage> {
         'notes': _notesController.text,
       };
 
-      print('DEBUG: Meeting data to update: $meetingData'); // Debug print
-      print('DEBUG: Meeting ID: ${widget.meeting.id}'); // Debug print
+
 
       final result =
           await _meetingService.updateMeeting(widget.meeting.id, meetingData);
-      print('DEBUG: Meeting update result: $result'); // Debug print
+
 
       if (mounted) {
         AppSnackBar.showSnackBar(
@@ -194,7 +192,7 @@ class _EditMeetingPageState extends State<EditMeetingPage> {
         Navigator.pop(context, true);
       }
     } catch (e) {
-      print('DEBUG: Error updating meeting: $e'); // Debug print
+
       if (mounted) {
         AppSnackBar.showSnackBar(
           context,

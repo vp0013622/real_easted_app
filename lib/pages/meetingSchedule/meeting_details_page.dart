@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'dart:convert';
 import 'package:inhabit_realties/constants/contants.dart';
 import 'package:inhabit_realties/models/meeting_schedule_model.dart';
 import 'package:inhabit_realties/controllers/user/userController.dart';
@@ -9,7 +10,7 @@ import 'package:inhabit_realties/models/property/PropertyModel.dart';
 import 'package:inhabit_realties/models/meetingSchedule/MeetingScheduleStatusModel.dart';
 import 'package:inhabit_realties/controllers/meeting_schedule_status/meeting_schedule_status_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
+
 import 'package:inhabit_realties/pages/meetingSchedule/edit_meeting_page.dart';
 import 'package:inhabit_realties/services/meeting_schedule_service.dart';
 import '../widgets/appSnackBar.dart';
@@ -42,7 +43,7 @@ class _MeetingDetailsPageState extends State<MeetingDetailsPage>
   late AnimationController _cardAnimationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-  late Animation<double> _scaleAnimation;
+
 
   @override
   void initState() {
@@ -66,9 +67,7 @@ class _MeetingDetailsPageState extends State<MeetingDetailsPage>
       parent: _animationController,
       curve: Curves.easeOutCubic,
     ));
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.elasticOut),
-    );
+
 
     _loadMeetingDetails();
   }
@@ -95,7 +94,7 @@ class _MeetingDetailsPageState extends State<MeetingDetailsPage>
             _customer = UsersModel.fromJson(response['data']);
           }
         } catch (e) {
-          print('Error loading customer: $e');
+          // Handle error silently
         }
       }
 
@@ -108,7 +107,7 @@ class _MeetingDetailsPageState extends State<MeetingDetailsPage>
             _scheduledBy = UsersModel.fromJson(response['data']);
           }
         } catch (e) {
-          print('Error loading scheduled by user: $e');
+          // Handle error silently
         }
       }
 
@@ -124,7 +123,7 @@ class _MeetingDetailsPageState extends State<MeetingDetailsPage>
             _property = PropertyModel.fromJson(response['data']);
           }
         } catch (e) {
-          print('Error loading property: $e');
+          // Handle error silently
         }
       }
 
@@ -153,7 +152,7 @@ class _MeetingDetailsPageState extends State<MeetingDetailsPage>
           _status = status;
         }
       } catch (e) {
-        print('Error loading status: $e');
+        // Handle error silently
       }
 
       setState(() {
@@ -370,6 +369,37 @@ class _MeetingDetailsPageState extends State<MeetingDetailsPage>
     );
   }
 
+  Future<String?> _getCancelledStatusId() async {
+    try {
+      final response = await _meetingScheduleStatusController
+          .getAllMeetingScheduleStatuses();
+      if (response['statusCode'] == 200 && response['data'] != null) {
+        final statuses = (response['data'] as List)
+            .map((json) => MeetingScheduleStatusModel.fromJson(json))
+            .toList();
+
+        // Find the cancelled status
+        final cancelledStatus = statuses.firstWhere(
+          (s) => s.name.toLowerCase() == 'cancelled',
+          orElse: () => MeetingScheduleStatusModel(
+            id: '',
+            name: '',
+            description: '',
+            statusCode: 0,
+            createdByUserId: '',
+            updatedByUserId: '',
+            published: true,
+          ),
+        );
+
+        return cancelledStatus.id.isNotEmpty ? cancelledStatus.id : null;
+      }
+    } catch (e) {
+      // Handle error silently
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -409,31 +439,28 @@ class _MeetingDetailsPageState extends State<MeetingDetailsPage>
               color: Colors.transparent,
               child: InkWell(
                 borderRadius: BorderRadius.circular(20),
-                onTap: () async {
-                  print('Edit button tapped'); // Debug print
-                  try {
-                    final result = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            EditMeetingPage(meeting: widget.meeting),
-                      ),
-                    );
-                    print('Edit result: $result'); // Debug print
-                    if (result == true) {
-                      // Refresh the page or navigate back
-                      Navigator.pop(context, true);
-                    }
-                  } catch (e) {
-                    print('Error navigating to edit page: $e'); // Debug print
-                    AppSnackBar.showSnackBar(
-                      context,
-                      'Error',
-                      'Error opening edit page: $e',
-                      ContentType.failure,
-                    );
-                  }
-                },
+                                        onTap: () async {
+                          try {
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    EditMeetingPage(meeting: widget.meeting),
+                              ),
+                            );
+                            if (result == true) {
+                              // Refresh the page or navigate back
+                              Navigator.pop(context, true);
+                            }
+                          } catch (e) {
+                            AppSnackBar.showSnackBar(
+                              context,
+                              'Error',
+                              'Error opening edit page: $e',
+                              ContentType.failure,
+                            );
+                          }
+                        },
                 child: const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Row(
@@ -687,132 +714,132 @@ class _MeetingDetailsPageState extends State<MeetingDetailsPage>
                     ),
                   ],
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.lightWarning,
-                          foregroundColor: Colors.white,
-                          elevation: 8,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.lightDanger,
+                    foregroundColor: Colors.white,
+                    elevation: 8,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () async {
+
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Cancel Meeting'),
+                        content: const Text(
+                            'Are you sure you want to cancel this meeting? This action cannot be undone.'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('No'),
                           ),
-                        ),
-                        onPressed: () async {
-                          print('Reschedule button tapped'); // Debug print
-                          try {
-                            final result = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    EditMeetingPage(meeting: widget.meeting),
-                              ),
-                            );
-                            print('Reschedule result: $result'); // Debug print
-                            if (result == true) {
-                              // Refresh the page or navigate back
-                              Navigator.pop(context, true);
+                          ElevatedButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.lightDanger,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Yes, Cancel'),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (confirmed == true) {
+
+                      try {
+
+                        // Get the cancelled status ID
+                        final cancelledStatusId = await _getCancelledStatusId();
+
+
+                        if (cancelledStatusId != null) {
+                          // Get current user ID for updatedByUserId
+                          final prefs = await SharedPreferences.getInstance();
+                          
+                          // Get user data from currentUser key (stored as JSON)
+                          final currentUserJson = prefs.getString('currentUser');
+                          String? currentUserId;
+                          
+                          if (currentUserJson != null) {
+                            try {
+                              final userData = json.decode(currentUserJson);
+                              currentUserId = userData['_id'] ?? userData['id'];
+
+                            } catch (e) {
+
                             }
-                          } catch (e) {
-                            print(
-                                'Error navigating to reschedule page: $e'); // Debug print
+                          }
+                          
+                          // Fallback to other possible keys if currentUser doesn't work
+                          if (currentUserId == null) {
+                            currentUserId = prefs.getString('userId');
+                          }
+                          if (currentUserId == null) {
+                            currentUserId = prefs.getString('adminId');
+                          }
+                          
+
+                          
+                          if (currentUserId == null) {
+                            throw Exception('User not authenticated - no user ID found in SharedPreferences');
+                          }
+                          
+
+                          
+                          // Update meeting status to cancelled instead of deleting
+                          final result = await _meetingService
+                              .updateMeeting(widget.meeting.id, {
+                            'title': widget.meeting.title,
+                            'description': widget.meeting.description,
+                            'meetingDate': widget.meeting.meetingDate,
+                            'startTime': widget.meeting.startTime,
+                            'endTime': widget.meeting.endTime,
+                            'duration': widget.meeting.duration,
+                            'status': cancelledStatusId,
+                            'customerId': widget.meeting.customerId,
+                            'propertyId': widget.meeting.propertyId,
+                            'notes': widget.meeting.notes,
+                            'updatedByUserId': currentUserId,
+                          });
+                          
+
+                          
+                          if (mounted) {
                             AppSnackBar.showSnackBar(
                               context,
-                              'Error',
-                              'Error opening reschedule page: $e',
-                              ContentType.failure,
+                              'Success',
+                              'Meeting cancelled successfully',
+                              ContentType.success,
                             );
+                            Navigator.pop(context, true);
                           }
-                        },
-                        child: const Text(
-                          'Reschedule',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.lightDanger,
-                          foregroundColor: Colors.white,
-                          elevation: 8,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: () async {
-                          print('Cancel button tapped'); // Debug print
-                          final confirmed = await showDialog<bool>(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: const Text('Cancel Meeting'),
-                              content: const Text(
-                                  'Are you sure you want to cancel this meeting? This action cannot be undone.'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () =>
-                                      Navigator.pop(context, false),
-                                  child: const Text('No'),
-                                ),
-                                ElevatedButton(
-                                  onPressed: () => Navigator.pop(context, true),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.lightDanger,
-                                    foregroundColor: Colors.white,
-                                  ),
-                                  child: const Text('Yes, Cancel'),
-                                ),
-                              ],
-                            ),
+                        } else {
+                          throw Exception('Could not find cancelled status');
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          AppSnackBar.showSnackBar(
+                            context,
+                            'Error',
+                            'Error cancelling meeting: $e',
+                            ContentType.failure,
                           );
-
-                          if (confirmed == true) {
-                            print('User confirmed cancellation'); // Debug print
-                            try {
-                              await _meetingService
-                                  .deleteMeeting(widget.meeting.id);
-                              print(
-                                  'Meeting deleted successfully'); // Debug print
-                              if (mounted) {
-                                AppSnackBar.showSnackBar(
-                                  context,
-                                  'Success',
-                                  'Meeting cancelled successfully',
-                                  ContentType.success,
-                                );
-                                Navigator.pop(context, true);
-                              }
-                            } catch (e) {
-                              print(
-                                  'Error cancelling meeting: $e'); // Debug print
-                              if (mounted) {
-                                AppSnackBar.showSnackBar(
-                                  context,
-                                  'Error',
-                                  'Error cancelling meeting: $e',
-                                  ContentType.failure,
-                                );
-                              }
-                            }
-                          }
-                        },
-                        child: const Text(
-                          'Cancel',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
+                        }
+                      }
+                    }
+                  },
+                  child: const Text(
+                    'Cancel Meeting',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),

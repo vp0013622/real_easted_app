@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'dart:convert';
 import 'package:inhabit_realties/constants/contants.dart';
 import 'package:inhabit_realties/services/meeting_schedule_service.dart';
 import 'package:inhabit_realties/models/meeting_schedule_model.dart';
 import 'package:inhabit_realties/pages/widgets/appSnackBar.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shimmer/shimmer.dart';
 
 class MyScheduledMeetingsPage extends StatefulWidget {
   const MyScheduledMeetingsPage({super.key});
@@ -15,16 +17,114 @@ class MyScheduledMeetingsPage extends StatefulWidget {
       _MyScheduledMeetingsPageState();
 }
 
-class _MyScheduledMeetingsPageState extends State<MyScheduledMeetingsPage> {
+class _MyScheduledMeetingsPageState extends State<MyScheduledMeetingsPage>
+    with TickerProviderStateMixin {
   final MeetingScheduleService _meetingService = MeetingScheduleService();
   List<MeetingSchedule> _meetings = [];
   bool _isLoading = true;
   String? _error;
 
+  // Cache for user and property details
+  Map<String, Map<String, dynamic>> _userCache = {};
+  Map<String, Map<String, dynamic>> _propertyCache = {};
+
+  // Current user role for permission checking
+  String? _currentUserRole;
+
+  // Meeting type filter
+  List<String> _meetingTypes = [
+    'ALL',
+    'SCHEDULED',
+    'COMPLETED',
+    'CANCELLED',
+    'RESCHEDULED',
+    'MISSED'
+  ];
+  int _selectedTypeIndex = 0;
+
+  // Animation controllers
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
   @override
   void initState() {
     super.initState();
+    _setupAnimations();
+    _loadCurrentUserRole();
     _loadMyScheduledMeetings();
+  }
+
+  void _setupAnimations() {
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+      ),
+    );
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOutCubic),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadCurrentUserRole() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final currentUserJson = prefs.getString('currentUser');
+
+
+
+      if (currentUserJson != null) {
+        final userData = json.decode(currentUserJson);
+
+
+        // Try different possible role field structures
+        _currentUserRole = userData['role']?['name'] ??
+            userData['role'] ??
+            userData['roleId']?['name'] ??
+            userData['roleId'];
+
+
+
+        // Force a rebuild to update the UI
+        if (mounted) {
+          setState(() {});
+        }
+      } else {
+
+      }
+    } catch (e) {
+      // Handle error silently
+    }
+  }
+
+  bool _canCreateMeetings() {
+    if (_currentUserRole == null) {
+      return false;
+    }
+
+    final role = _currentUserRole!.toLowerCase();
+    final canCreate = role == 'admin' || role == 'sales' || role == 'executive';
+
+    return canCreate;
   }
 
   Future<void> _loadMyScheduledMeetings() async {
@@ -48,10 +148,19 @@ class _MyScheduledMeetingsPageState extends State<MyScheduledMeetingsPage> {
           .where((meeting) => meeting.scheduledByUserId == currentUserId)
           .toList();
 
+      // Apply meeting type filtering
+      final filteredMeetings = _filterMeetingsByType(myScheduledMeetings);
+
+      // Load associated data for all meetings
+      await _loadAssociatedData(myScheduledMeetings);
+
       setState(() {
-        _meetings = myScheduledMeetings;
+        _meetings = filteredMeetings;
         _isLoading = false;
       });
+
+      // Start animation after data is loaded
+      _animationController.forward();
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -60,18 +169,193 @@ class _MyScheduledMeetingsPageState extends State<MyScheduledMeetingsPage> {
     }
   }
 
+  Future<void> _loadAssociatedData(List<MeetingSchedule> meetings) async {
+    // Load user and property details for all meetings
+    for (final meeting in meetings) {
+      // Load customer details
+      if (meeting.customerId.isNotEmpty &&
+          !_userCache.containsKey(meeting.customerId)) {
+        final userDetails =
+            await _meetingService.getUserDetails(meeting.customerId);
+        if (userDetails != null) {
+          _userCache[meeting.customerId] = userDetails;
+        }
+      }
+
+      // Load property details
+      if (meeting.propertyId != null &&
+          meeting.propertyId!.isNotEmpty &&
+          !_propertyCache.containsKey(meeting.propertyId!)) {
+        final propertyDetails =
+            await _meetingService.getPropertyDetails(meeting.propertyId!);
+        if (propertyDetails != null) {
+          _propertyCache[meeting.propertyId!] = propertyDetails;
+        }
+      }
+    }
+
+    // Notify UI to rebuild with loaded data
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  List<MeetingSchedule> _filterMeetingsByType(List<MeetingSchedule> meetings) {
+    if (_selectedTypeIndex == 0) {
+      // ALL - return all meetings
+      return meetings;
+    }
+
+    final selectedType = _meetingTypes[_selectedTypeIndex];
+    final now = DateTime.now();
+
+    return meetings.where((meeting) {
+      final status = meeting.getStatusName().toUpperCase();
+
+      if (selectedType == 'SCHEDULED') {
+        // For scheduled meetings, check if end time is greater than current date
+        if (status == 'SCHEDULED') {
+          try {
+            // Parse meeting date and end time
+            final meetingDate = DateTime.parse(meeting.meetingDate);
+            final endTime = meeting.endTime ?? meeting.startTime;
+
+            // Create full datetime for meeting end
+            final meetingEndDateTime = DateTime(
+              meetingDate.year,
+              meetingDate.month,
+              meetingDate.day,
+              int.parse(endTime.split(':')[0]),
+              int.parse(endTime.split(':')[1]),
+            );
+
+            // Only show if meeting end time is greater than current time
+            return meetingEndDateTime.isAfter(now);
+          } catch (e) {
+            // If parsing fails, show the meeting anyway
+            return true;
+          }
+        }
+        return false;
+      }
+
+      // For other statuses, just check the status
+      return status == selectedType;
+    }).toList();
+  }
+
+  Widget _buildMeetingTypesList() {
+    if (_meetingTypes.isEmpty) {
+      return Container(
+        height: 65,
+        alignment: Alignment.center,
+        child: Text(
+          'No meeting types available',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.greyColor,
+              ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 65,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        itemCount: _meetingTypes.length,
+        itemBuilder: (context, index) {
+          final isSelected = index == _selectedTypeIndex;
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          final backgroundColor = isDark
+              ? AppColors.darkCardBackground
+              : AppColors.lightCardBackground;
+          final textColor =
+              isDark ? AppColors.darkWhiteText : AppColors.lightDarkText;
+
+          return Container(
+            margin: EdgeInsets.only(
+              left: index == 0 ? 0 : 8,
+              right: index == _meetingTypes.length - 1 ? 0 : 8,
+            ),
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedTypeIndex = index;
+                });
+                _loadMyScheduledMeetings();
+              },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.brandPrimary : backgroundColor,
+                  borderRadius: BorderRadius.circular(25),
+                  border: Border.all(
+                    color: isSelected
+                        ? AppColors.brandPrimary
+                        : AppColors.brandPrimary.withOpacity(0.3),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: isSelected
+                          ? AppColors.brandPrimary.withOpacity(0.3)
+                          : Colors.transparent,
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  _meetingTypes[index],
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : textColor,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  String _getUserName(String userId) {
+    final userDetails = _userCache[userId];
+    if (userDetails != null) {
+      final firstName = userDetails['firstName'] ?? '';
+      final lastName = userDetails['lastName'] ?? '';
+      return '${firstName} ${lastName}'.trim();
+    }
+    return 'User $userId';
+  }
+
+  String _getPropertyName(String? propertyId) {
+    if (propertyId == null || propertyId.isEmpty) return 'No Property';
+
+    final propertyDetails = _propertyCache[propertyId];
+    if (propertyDetails != null) {
+      return propertyDetails['name'] ?? 'Property $propertyId';
+    }
+    return 'Property $propertyId';
+  }
+
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'scheduled':
-        return AppColors.brandPrimary;
-      case 'completed':
         return AppColors.lightSuccess;
+      case 'completed':
+        return AppColors.lightPrimary;
       case 'cancelled':
+      case 'canceled':
         return AppColors.lightDanger;
       case 'rescheduled':
         return AppColors.lightWarning;
       default:
-        return AppColors.greyColor2;
+        return AppColors.brandPrimary;
     }
   }
 
@@ -93,206 +377,566 @@ class _MyScheduledMeetingsPageState extends State<MyScheduledMeetingsPage> {
   void _showDeleteDialog(MeetingSchedule meeting) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Delete Meeting'),
-          content: Text(
-              'Are you sure you want to delete the meeting "${meeting.title}"?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                try {
-                  await _meetingService.deleteMeeting(meeting.id);
-                  AppSnackBar.showSnackBar(
-                    context,
-                    'Success',
-                    'Meeting deleted successfully',
-                    ContentType.success,
-                  );
-                  _loadMyScheduledMeetings(); // Refresh the list
-                } catch (e) {
-                  AppSnackBar.showSnackBar(
-                    context,
-                    'Error',
-                    'Failed to delete meeting: $e',
-                    ContentType.failure,
-                  );
-                }
-              },
-              child: const Text('Delete'),
-            ),
-          ],
-        );
-      },
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Meeting'),
+        content: Text('Are you sure you want to delete "${meeting.title}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                await _meetingService.deleteMeeting(meeting.id);
+                _loadMyScheduledMeetings();
+                AppSnackBar.showSnackBar(
+                  context,
+                  'Success',
+                  'Meeting deleted successfully',
+                  ContentType.success,
+                );
+              } catch (e) {
+                AppSnackBar.showSnackBar(
+                  context,
+                  'Error',
+                  'Error deleting meeting: $e',
+                  ContentType.failure,
+                );
+              }
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor =
+        isDark ? AppColors.darkBackground : AppColors.lightBackground;
+
     return Scaffold(
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: const Text('My Scheduled Meetings'),
+        elevation: 0,
+        backgroundColor: isDark
+            ? AppColors.darkCardBackground
+            : AppColors.lightCardBackground,
+        foregroundColor:
+            isDark ? AppColors.darkWhiteText : AppColors.lightDarkText,
+        title: Text(
+          'My Scheduled Meetings',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: isDark ? AppColors.darkWhiteText : AppColors.lightDarkText,
+          ),
+        ),
         actions: [
+          // Create Meeting Button - Only visible to admin, sales, and executive roles
+          if (_canCreateMeetings())
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                gradient: AppColors.brandGradient,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.brandPrimary.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(20),
+                  onTap: () async {
+            
+                    final result =
+                        await Navigator.pushNamed(context, '/create_meeting');
+                    if (result == true) {
+                      _loadMyScheduledMeetings();
+                    }
+                  },
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          CupertinoIcons.add,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Create',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          const SizedBox(width: 8), // Add spacing between buttons
           IconButton(
-            icon: const Icon(CupertinoIcons.refresh),
+            icon: Icon(
+              CupertinoIcons.refresh,
+              color: AppColors.brandPrimary,
+            ),
             onPressed: _loadMyScheduledMeetings,
           ),
         ],
       ),
       body: RefreshIndicator(
         onRefresh: _loadMyScheduledMeetings,
+        color: AppColors.brandPrimary,
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? _buildLoadingState()
             : _error != null
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          CupertinoIcons.exclamationmark_triangle,
-                          size: 64,
-                          color: AppColors.lightWarning,
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Error loading meetings',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _error!,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: AppColors.greyColor2),
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: _loadMyScheduledMeetings,
-                          child: const Text('Retry'),
-                        ),
-                      ],
+                ? _buildErrorState()
+                : Column(
+                    children: [
+                      // Meeting types filter
+                      _buildMeetingTypesList(),
+                      // Meetings list
+                      Expanded(
+                        child: _meetings.isEmpty
+                            ? _buildEmptyState()
+                            : _buildMeetingsList(),
+                      ),
+                    ],
+                  ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(20),
+      itemCount: 4,
+      itemBuilder: (context, index) {
+        return Shimmer.fromColors(
+          baseColor: Colors.grey[300]!,
+          highlightColor: Colors.grey[100]!,
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 20),
+            height: 180,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildErrorState() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor =
+        isDark ? AppColors.darkWhiteText : AppColors.lightDarkText;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.lightDanger.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                CupertinoIcons.exclamationmark_triangle,
+                size: 64,
+                color: AppColors.lightDanger,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Error Loading Meetings',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: textColor,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _error!,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: _loadMyScheduledMeetings,
+              icon: const Icon(CupertinoIcons.refresh),
+              label: const Text('Try Again'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.brandPrimary,
+                foregroundColor: Colors.white,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor =
+        isDark ? AppColors.darkWhiteText : AppColors.lightDarkText;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.brandPrimary.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                CupertinoIcons.calendar,
+                size: 64,
+                color: AppColors.brandPrimary,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'No Scheduled Meetings',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: textColor,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'You haven\'t scheduled any meetings yet',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () async {
+                final result =
+                    await Navigator.pushNamed(context, '/create_meeting');
+                if (result == true) {
+                  _loadMyScheduledMeetings();
+                }
+              },
+              icon: const Icon(CupertinoIcons.add),
+              label: const Text('Schedule Meeting'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.brandPrimary,
+                foregroundColor: Colors.white,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMeetingsList() {
+    return AnimatedBuilder(
+      animation: _animationController,
+      builder: (context, child) {
+        return ListView.builder(
+          padding: const EdgeInsets.all(20),
+          itemCount: _meetings.length,
+          itemBuilder: (context, index) {
+            final meeting = _meetings[index];
+            return FadeTransition(
+              opacity: _fadeAnimation,
+              child: SlideTransition(
+                position: _slideAnimation,
+                child: _buildMeetingCard(meeting, index),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildMeetingCard(MeetingSchedule meeting, int index) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor =
+        isDark ? AppColors.darkCardBackground : AppColors.lightCardBackground;
+    final textColor =
+        isDark ? AppColors.darkWhiteText : AppColors.lightDarkText;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with title and status
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: _getStatusColor(meeting.getStatusName()).withOpacity(0.1),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    meeting.title,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
                     ),
-                  )
-                : _meetings.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              CupertinoIcons.calendar,
-                              size: 64,
-                              color: AppColors.greyColor2,
-                            ),
-                            const SizedBox(height: 16),
-                            const Text(
-                              'No scheduled meetings',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'You haven\'t scheduled any meetings yet.',
-                              style: TextStyle(color: AppColors.greyColor2),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        itemCount: _meetings.length,
-                        itemBuilder: (context, index) {
-                          final meeting = _meetings[index];
-                          return Card(
-                            margin: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            child: ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor:
-                                    _getStatusColor(meeting.getStatusName()),
-                                                                  child: Icon(
-                                    _getStatusIcon(meeting.getStatusName()),
-                                  color: Colors.white,
-                                ),
-                              ),
-                              title: Text(
-                                meeting.title,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('Date: ${meeting.meetingDate}'),
-                                  Text('Start Time: ${meeting.startTime}'),
-                                  if (meeting.endTime != null)
-                                    Text('End Time: ${meeting.endTime}'),
-                                  if (meeting.duration != null &&
-                                      meeting.duration!.isNotEmpty)
-                                    Text('Duration: ${meeting.duration}'),
-                                  Text('Status: ${meeting.getStatusName()}'),
-                                  if (meeting.description.isNotEmpty)
-                                    Text('Description: ${meeting.description}'),
-                                  if (meeting.notes.isNotEmpty)
-                                    Text('Notes: ${meeting.notes}'),
-                                  Text('Customer ID: ${meeting.customerId}'),
-                                  if (meeting.propertyId != null)
-                                    Text('Property ID: ${meeting.propertyId}'),
-                                  Text(
-                                      'Scheduled By: ${meeting.scheduledByUserId}'),
-                                ],
-                              ),
-                              trailing: PopupMenuButton<String>(
-                                onSelected: (value) {
-                                  if (value == 'edit') {
-                                    // TODO: Implement edit functionality
-                                    AppSnackBar.showSnackBar(
-                                      context,
-                                      'Info',
-                                      'Edit functionality coming soon',
-                                      ContentType.help,
-                                    );
-                                  } else if (value == 'delete') {
-                                    _showDeleteDialog(meeting);
-                                  }
-                                },
-                                itemBuilder: (context) => [
-                                  const PopupMenuItem(
-                                    value: 'edit',
-                                    child: Row(
-                                      children: [
-                                        Icon(CupertinoIcons.pencil),
-                                        SizedBox(width: 8),
-                                        Text('Edit'),
-                                      ],
-                                    ),
-                                  ),
-                                  const PopupMenuItem(
-                                    value: 'delete',
-                                    child: Row(
-                                      children: [
-                                        Icon(CupertinoIcons.delete),
-                                        SizedBox(width: 8),
-                                        Text('Delete'),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(meeting.getStatusName()),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    meeting.getStatusName(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Meeting details
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Date and Time Section
+                _buildSectionHeader('Schedule', CupertinoIcons.calendar),
+                const SizedBox(height: 12),
+                _buildInfoRow(
+                    'Date', meeting.meetingDate, CupertinoIcons.calendar),
+                _buildInfoRow(
+                    'Start Time', meeting.startTime, CupertinoIcons.time),
+                if (meeting.endTime != null && meeting.endTime!.isNotEmpty)
+                  _buildInfoRow(
+                      'End Time', meeting.endTime!, CupertinoIcons.time_solid),
+                if (meeting.duration != null && meeting.duration!.isNotEmpty)
+                  _buildInfoRow(
+                      'Duration', meeting.duration!, CupertinoIcons.clock),
+
+                const SizedBox(height: 20),
+
+                // Description and Notes Section
+                if (meeting.description.isNotEmpty) ...[
+                  _buildSectionHeader('Details', CupertinoIcons.text_bubble),
+                  const SizedBox(height: 12),
+                  _buildInfoRow('Description', meeting.description,
+                      CupertinoIcons.text_bubble),
+                ],
+
+                if (meeting.notes.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  _buildInfoRow(
+                      'Notes', meeting.notes, CupertinoIcons.doc_text),
+                ],
+
+                const SizedBox(height: 20),
+
+                // People and Property Section
+                _buildSectionHeader(
+                    'Participants & Property', CupertinoIcons.person_2),
+                const SizedBox(height: 12),
+                _buildInfoRow('Customer', _getUserName(meeting.customerId),
+                    CupertinoIcons.person),
+                if (meeting.propertyId != null &&
+                    meeting.propertyId!.isNotEmpty)
+                  _buildInfoRow(
+                      'Property',
+                      _getPropertyName(meeting.propertyId),
+                      CupertinoIcons.home),
+
+                const SizedBox(height: 20),
+
+                // Action buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          AppSnackBar.showSnackBar(
+                            context,
+                            'Info',
+                            'Edit functionality coming soon',
+                            ContentType.help,
                           );
                         },
+                        icon: const Icon(CupertinoIcons.pencil),
+                        label: const Text('Edit'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          side: BorderSide(color: AppColors.brandPrimary),
+                        ),
                       ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _showDeleteDialog(meeting),
+                        icon: const Icon(CupertinoIcons.delete),
+                        label: const Text('Delete'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.lightDanger,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, IconData icon) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor =
+        isDark ? AppColors.darkWhiteText : AppColors.lightDarkText;
+
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 20,
+          color: AppColors.brandPrimary,
+        ),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: textColor,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value, IconData icon) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor =
+        isDark ? AppColors.darkWhiteText : AppColors.lightDarkText;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: AppColors.brandPrimary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              size: 16,
+              color: AppColors.brandPrimary,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: textColor,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

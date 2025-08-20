@@ -22,6 +22,19 @@ class PropertyDetailHeader extends StatelessWidget {
       pinned: true,
       elevation: 0,
       backgroundColor: Colors.transparent,
+      actions: [
+        IconButton(
+          icon: const Icon(
+            Icons.location_on,
+            color: AppColors.darkWhiteText,
+            size: 24,
+          ),
+          onPressed: () {
+            // Show property address details
+            _showPropertyAddress(context);
+          },
+        ),
+      ],
       flexibleSpace: FlexibleSpaceBar(
         title: AnimatedOpacity(
           duration: const Duration(milliseconds: 300),
@@ -111,12 +124,65 @@ class PropertyDetailHeader extends StatelessWidget {
 
   String _getFormattedAddress(Address address) {
     final List<String> addressParts = [];
-    
+
     if (address.area.isNotEmpty) addressParts.add(address.area);
     if (address.city.isNotEmpty) addressParts.add(address.city);
     if (address.state.isNotEmpty) addressParts.add(address.state);
     if (address.zipOrPinCode.isNotEmpty) addressParts.add(address.zipOrPinCode);
-    
+
     return addressParts.join(', ');
+  }
+
+  void _showPropertyAddress(BuildContext context) {
+    final address = property.propertyAddress;
+    final List<String> addressParts = [];
+
+    if (address.street.isNotEmpty)
+      addressParts.add('Street: ${address.street}');
+    if (address.area.isNotEmpty) addressParts.add('Area: ${address.area}');
+    if (address.city.isNotEmpty) addressParts.add('City: ${address.city}');
+    if (address.state.isNotEmpty) addressParts.add('State: ${address.state}');
+    if (address.zipOrPinCode.isNotEmpty)
+      addressParts.add('ZIP/PIN: ${address.zipOrPinCode}');
+    if (address.country.isNotEmpty)
+      addressParts.add('Country: ${address.country}');
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              const Icon(
+                Icons.location_on,
+                color: AppColors.brandPrimary,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              const Text('Property Address'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: addressParts
+                .map((part) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Text(
+                        part,
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                    ))
+                .toList(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

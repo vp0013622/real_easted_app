@@ -187,6 +187,96 @@ class MeetingScheduleService {
     }
   }
 
+  // Check if a meeting should be marked as missed
+  bool _isMeetingMissed(MeetingSchedule meeting) {
+    try {
+      // Parse meeting date and end time
+      final meetingDate = DateTime.parse(meeting.meetingDate);
+      final endTime = meeting.endTime ?? meeting.startTime;
+      
+      // Create DateTime for meeting end
+      final timeParts = endTime.split(':');
+      final meetingEndDateTime = DateTime(
+        meetingDate.year,
+        meetingDate.month,
+        meetingDate.day,
+        int.parse(timeParts[0]),
+        int.parse(timeParts[1]),
+      );
+      
+      // Check if current time is past meeting end time
+      final now = DateTime.now();
+      return now.isAfter(meetingEndDateTime);
+    } catch (e) {
+      // If parsing fails, return false
+      return false;
+    }
+  }
+
+  // Update meeting status to missed if applicable
+  Future<void> updateMeetingStatusIfMissed(MeetingSchedule meeting) async {
+    try {
+      // Only update if meeting is currently scheduled and should be marked as missed
+      if (meeting.getStatusName().toLowerCase() == 'scheduled' && _isMeetingMissed(meeting)) {
+        // Get the missed status ID (you'll need to implement this based on your status system)
+        final missedStatusId = await _getMissedStatusId();
+        
+        if (missedStatusId != null) {
+          await updateMeeting(meeting.id, {
+            'status': missedStatusId,
+            'updatedByUserId': meeting.updatedByUserId,
+          });
+        }
+      }
+    } catch (e) {
+      // Handle error silently
+    }
+  }
+
+  // Get the missed status ID from the backend
+  Future<String?> _getMissedStatusId() async {
+    try {
+      final token = await _getToken();
+      if (token == null) return null;
+
+      final response = await http.get(
+        Uri.parse(ApiUrls.getAllMeetingScheduleStatuses),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        final List<dynamic> statuses = data['data'] ?? [];
+        
+        // Find the missed status
+        for (final status in statuses) {
+          if (status['name']?.toString().toLowerCase() == 'missed') {
+            return status['_id'] ?? status['id'];
+          }
+        }
+      }
+      return null;
+    } catch (e) {
+      // Handle error silently
+      return null;
+    }
+  }
+
+  // Check and update all meetings for missed status
+  Future<void> checkAndUpdateMissedMeetings() async {
+    try {
+      final meetings = await getAllMeetings();
+      for (final meeting in meetings) {
+        await updateMeetingStatusIfMissed(meeting);
+      }
+    } catch (e) {
+      // Handle error silently
+    }
+  }
+
   // Get all not published meeting schedules (admin only)
   Future<List<MeetingSchedule>> getAllNotPublishedMeetings() async {
     try {
@@ -243,6 +333,60 @@ class MeetingScheduleService {
       }
     } catch (e) {
       throw Exception('Error loading meeting schedule: $e');
+    }
+  }
+
+  // Get user details by ID
+  Future<Map<String, dynamic>?> getUserDetails(String userId) async {
+    try {
+      final token = await _getToken();
+      if (token == null) {
+        throw Exception('No authentication token found');
+      }
+
+      final response = await http.get(
+        Uri.parse('${ApiUrls.getUserById}$userId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        return data['data'];
+      } else {
+        return null;
+      }
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Get property details by ID
+  Future<Map<String, dynamic>?> getPropertyDetails(String propertyId) async {
+    try {
+      final token = await _getToken();
+      if (token == null) {
+        throw Exception('No authentication token found');
+      }
+
+      final response = await http.get(
+        Uri.parse('${ApiUrls.getPropertyById}$propertyId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        return data['data'];
+      } else {
+        return null;
+      }
+    } catch (e) {
+      return null;
     }
   }
 }

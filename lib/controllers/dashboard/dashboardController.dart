@@ -15,6 +15,9 @@ class DashboardController extends ChangeNotifier {
   // Recent Activities
   List<Map<String, dynamic>> _recentActivities = [];
 
+  // Today's Schedules
+  List<Map<String, dynamic>> _todaySchedules = [];
+
   // Getters
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -36,6 +39,7 @@ class DashboardController extends ChangeNotifier {
   List<double> get weeklyData => _weeklyData;
   List<String> get weekDays => _weekDays;
   List<Map<String, dynamic>> get recentActivities => _recentActivities;
+  List<Map<String, dynamic>> get todaySchedules => _todaySchedules;
 
   // Schedule count getters
   int get todaySchedulesCount => _dashboardData['todaySchedules'] ?? 0;
@@ -66,6 +70,9 @@ class DashboardController extends ChangeNotifier {
 
         // Generate weekly data
         _generateWeeklyData();
+
+        // Load today's schedules
+        await _loadTodaySchedules(token);
 
         notifyListeners();
       } else {
@@ -108,6 +115,19 @@ class DashboardController extends ChangeNotifier {
 
       return baseActivity;
     });
+  }
+
+  // Load today's schedules
+  Future<void> _loadTodaySchedules(String token) async {
+    try {
+      final schedulesResponse = await DashboardService.getTodaySchedules(token);
+      if (schedulesResponse['statusCode'] == 200) {
+        final schedulesData = schedulesResponse['data'] as List<dynamic>;
+        _todaySchedules = schedulesData.map((schedule) => schedule as Map<String, dynamic>).toList();
+      }
+    } catch (e) {
+      // Don't throw error for schedules, just handle silently
+    }
   }
 
   // Set loading state

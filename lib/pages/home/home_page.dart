@@ -821,18 +821,8 @@ class _HomePageState extends State<HomePage>
                           child: _buildChart(_dashboardController.isLoading),
                         ),
                         const SizedBox(height: 30),
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const LeadAnalyticsPage(),
-                              ),
-                            );
-                          },
-                          child: _buildRecentActivity(
-                              _dashboardController.isLoading),
-                        ),
+                        _buildTodaySchedules(
+                            _dashboardController.isLoading),
                         const SizedBox(height: 30),
                         const SizedBox(height: 80),
                       ],
@@ -843,17 +833,293 @@ class _HomePageState extends State<HomePage>
             ),
           ),
           drawer: const AppDrawer(),
-          floatingActionButton: FloatingActionButton(
-            heroTag: 'home_refresh_button',
-            onPressed: _refreshDashboard,
-            backgroundColor: AppColors.brandPrimary,
-            child: const Icon(
-              Icons.refresh,
-              color: Colors.white,
+          floatingActionButton: Container(
+            decoration: BoxDecoration(
+              gradient: AppColors.brandGradient,
+              borderRadius: BorderRadius.circular(25),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.brandPrimary.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(25),
+                onTap: () async {
+                  Navigator.pushNamed(context, '/create_meeting');
+                },
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        CupertinoIcons.add,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Add Meeting',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
         );
       },
     );
+  }
+
+  Widget _buildTodaySchedules(bool isLoading) {
+    return AnimatedBuilder(
+      animation: _animationController,
+      builder: (context, child) {
+        return FadeTransition(
+          opacity: _fadeAnimation,
+          child: SlideTransition(
+            position: _slideAnimation,
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Today\'s Schedules',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      Icon(
+                        CupertinoIcons.calendar,
+                        color: AppColors.brandPrimary,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  if (isLoading)
+                    ...List.generate(3, (index) => _buildScheduleItemShimmer())
+                  else if (_dashboardController.todaySchedules.isEmpty)
+                    _buildNoSchedulesMessage()
+                  else
+                    ..._dashboardController.todaySchedules
+                        .map((schedule) => _buildScheduleItem(schedule))
+                        .toList(),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildScheduleItemShimmer() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 15),
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+        ),
+        height: 80,
+      ),
+    );
+  }
+
+  Widget _buildNoSchedulesMessage() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(
+              CupertinoIcons.calendar_badge_plus,
+              size: 48,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No meetings scheduled for today',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Colors.grey[600],
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'You\'re all caught up!',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey[500],
+                  ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScheduleItem(Map<String, dynamic> schedule) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor =
+        isDark ? AppColors.darkCardBackground : Colors.white;
+
+    // Extract schedule data
+    final title = schedule['title'] ?? 'Meeting';
+    final startTime = schedule['startTime'] ?? '';
+    final customerName = schedule['customerId'] is Map
+        ? '${schedule['customerId']['firstName'] ?? ''} ${schedule['customerId']['lastName'] ?? ''}'
+            .trim()
+        : 'Customer';
+    final propertyName = schedule['propertyId'] is Map
+        ? schedule['propertyId']['name'] ?? 'Property'
+        : 'Property';
+    final status = schedule['status'] is Map
+        ? schedule['status']['name'] ?? 'Scheduled'
+        : 'Scheduled';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 15),
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(
+          color: AppColors.brandPrimary.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.brandPrimary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  startTime,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.brandPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(
+                CupertinoIcons.person,
+                size: 16,
+                color: Colors.grey[600],
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  customerName,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey[700],
+                      ),
+                ),
+              ),
+            ],
+          ),
+          if (propertyName != 'Property') ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(
+                  CupertinoIcons.home,
+                  size: 16,
+                  color: Colors.grey[600],
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    propertyName,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey[700],
+                        ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(
+                CupertinoIcons.circle_fill,
+                size: 8,
+                color: _getStatusColor(status),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                status,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: _getStatusColor(status),
+                      fontWeight: FontWeight.w500,
+                    ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'scheduled':
+        return AppColors.lightSuccess;
+      case 'completed':
+        return AppColors.lightPrimary;
+      case 'cancelled':
+      case 'canceled':
+        return AppColors.lightDanger;
+      case 'rescheduled':
+        return AppColors.lightWarning;
+      default:
+        return AppColors.brandPrimary;
+    }
   }
 }

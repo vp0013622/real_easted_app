@@ -45,8 +45,7 @@ class UserSettingsService implements UserSettingsInterface {
 
   @override
   Future<UserSettingsModel> createUserSettings(String userId) async {
-    print(
-        '🔍 [DEBUG] UserSettingsService.createUserSettings called with userId: $userId');
+
 
     try {
       // Create default settings
@@ -66,11 +65,11 @@ class UserSettingsService implements UserSettingsInterface {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(
           'user_settings_$userId', json.encode(defaultSettings.toJson()));
-      print('🔍 [DEBUG] Saved default settings to local storage');
+      
 
       // Try to save to backend (optional)
       try {
-        print('🔍 [DEBUG] POST URL: $baseUrl/settings');
+
 
         final requestBody = {
           'userId': userId,

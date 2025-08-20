@@ -114,7 +114,7 @@ class _CreateMeetingPageState extends State<CreateMeetingPage> {
         _isDataLoading = true;
       });
 
-      print('DEBUG: Starting data initialization...'); // Debug log
+  
 
       await Future.wait([
         _loadCustomers(),
@@ -124,7 +124,7 @@ class _CreateMeetingPageState extends State<CreateMeetingPage> {
         _loadPropertyTypes(),
       ]);
 
-      print('DEBUG: Data initialization completed'); // Debug log
+      
 
       if (mounted) {
         setState(() {
@@ -133,7 +133,6 @@ class _CreateMeetingPageState extends State<CreateMeetingPage> {
         });
       }
     } catch (e) {
-      print('DEBUG: Error in _initializeData: $e'); // Debug log
       if (mounted) {
         setState(() {
           _isDataLoading = false;
@@ -151,46 +150,40 @@ class _CreateMeetingPageState extends State<CreateMeetingPage> {
   Future<void> _loadStatuses() async {
     try {
       final response = await _statusController.getAllMeetingScheduleStatuses();
-      print('DEBUG: Status API Response: $response'); // Debug log
+
       if (response['statusCode'] == 200 && mounted) {
         final data = response['data'] as List;
-        print('DEBUG: Status data length: ${data.length}'); // Debug log
-        print('DEBUG: Status data: $data'); // Debug log
+
         setState(() {
           _statuses = data
               .map((item) => MeetingScheduleStatusModel.fromJson(item))
               .toList();
         });
-        print('DEBUG: Loaded ${_statuses.length} statuses'); // Debug log
-        for (var status in _statuses) {
-          print(
-              'DEBUG: Status - ID: ${status.id}, Name: ${status.name}, StatusCode: ${status.statusCode}'); // Debug log
-        }
+
       } else {
-        print(
-            'DEBUG: Status API failed with status: ${response['statusCode']}'); // Debug log
+
       }
     } catch (e) {
-      print('DEBUG: Error loading statuses: $e'); // Debug log
+
       // Handle error silently
     }
   }
 
   Future<void> _loadCustomers() async {
     try {
-      print('DEBUG: Loading customers...'); // Debug log
+
       final response = await _userController.getAllUsers();
-      print('DEBUG: Customers response: $response'); // Debug log
+
       if (response['statusCode'] == 200 && mounted) {
         setState(() {
           _customers = (response['data'] as List)
               .map((item) => UsersModel.fromJson(item))
               .toList();
         });
-        print('DEBUG: Loaded ${_customers.length} customers'); // Debug log
+
       }
     } catch (e) {
-      print('DEBUG: Error loading customers: $e'); // Debug log
+
       // Handle error silently
     }
   }
@@ -278,19 +271,19 @@ class _CreateMeetingPageState extends State<CreateMeetingPage> {
 
   Future<void> _loadRoles() async {
     try {
-      print('DEBUG: Loading roles...'); // Debug log
+
       final response = await _roleController.getAllRoles();
-      print('DEBUG: Roles response: $response'); // Debug log
+
       if (response['statusCode'] == 200 && mounted) {
         setState(() {
           _roles = (response['data'] as List)
               .map((item) => RolesModel.fromJson(item))
               .toList();
         });
-        print('DEBUG: Loaded ${_roles.length} roles'); // Debug log
+
       }
     } catch (e) {
-      print('DEBUG: Error loading roles: $e'); // Debug log
+
       // Handle error silently
     }
   }

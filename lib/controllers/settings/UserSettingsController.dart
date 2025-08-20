@@ -39,29 +39,20 @@ class UserSettingsController extends ChangeNotifier {
 
   // Load user settings
   Future<void> loadUserSettings(String userId) async {
-    print(
-        '🔍 [DEBUG] UserSettingsController.loadUserSettings called with userId: $userId');
+
     _setLoading(true);
     _clearError();
 
     try {
-      print('🔍 [DEBUG] Calling _settingsService.getUserSettings...');
       _userSettings = await _settingsService.getUserSettings(userId);
-      print(
-          '🔍 [DEBUG] getUserSettings result: ${_userSettings != null ? "Found settings" : "No settings found"}');
 
       if (_userSettings == null) {
         // Create default settings if none exist
-        print('🔍 [DEBUG] Creating default settings for userId: $userId');
         _userSettings = await _settingsService.createUserSettings(userId);
-        print(
-            '🔍 [DEBUG] createUserSettings result: ${_userSettings != null ? "Success" : "Failed"}');
       }
 
       notifyListeners();
-      print('🔍 [DEBUG] Settings loaded successfully');
     } catch (e) {
-      print('❌ [DEBUG] Error in loadUserSettings: $e');
       _setError('Failed to load settings: $e');
     } finally {
       _setLoading(false);

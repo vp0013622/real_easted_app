@@ -36,33 +36,22 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _loadUserAndSettings() async {
-    print('🔍 [DEBUG] SettingsPage._loadUserAndSettings called');
     await _loadCurrentUser();
     if (_currentUser != null) {
-      print('🔍 [DEBUG] Current user found: ${_currentUser!.id}');
       await _settingsController.loadUserSettings(_currentUser!.id);
-    } else {
-      print('❌ [DEBUG] No current user found');
     }
   }
 
   Future<void> _loadCurrentUser() async {
-    print('🔍 [DEBUG] SettingsPage._loadCurrentUser called');
     try {
       final prefs = await SharedPreferences.getInstance();
       final userJson = prefs.getString('currentUser');
-      print('🔍 [DEBUG] User JSON from SharedPreferences: $userJson');
 
       if (userJson != null) {
         final userData = json.decode(userJson);
-        print('🔍 [DEBUG] Decoded user data: $userData');
         _currentUser = UsersModel.fromJson(userData);
-        print('🔍 [DEBUG] Current user loaded: ${_currentUser!.id}');
-      } else {
-        print('❌ [DEBUG] No user JSON found in SharedPreferences');
       }
     } catch (e) {
-      print('❌ [DEBUG] Error loading current user: $e');
       // Error handled silently
     }
   }
@@ -233,7 +222,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       },
                       onSettingsChanged: (settings) {
                         // TODO: Implement app settings update
-                        print('App settings updated: $settings');
+                    
                       },
                     ),
                     const SizedBox(height: 16),

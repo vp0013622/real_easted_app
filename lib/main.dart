@@ -40,6 +40,9 @@ import 'package:inhabit_realties/pages/meetingSchedule/meeting_details_page.dart
 import 'package:inhabit_realties/pages/meetingSchedule/edit_meeting_page.dart';
 import 'package:inhabit_realties/pages/notifications/notifications_page.dart';
 import 'package:inhabit_realties/pages/notifications/test_notifications_page.dart';
+import 'package:inhabit_realties/pages/profile/my_rental_bookings_page.dart';
+import 'package:inhabit_realties/pages/profile/my_purchase_bookings_page.dart';
+import 'package:inhabit_realties/pages/profile/booking_details_page.dart';
 
 void main() {
   runApp(const MainApp());
@@ -148,6 +151,16 @@ class _MainAppState extends State<MainApp> {
               },
               '/notifications': (context) => const NotificationsPage(),
               '/notifications/test': (context) => const TestNotificationsPage(),
+              '/my_rental_bookings': (context) => const MyRentalBookingsPage(),
+              '/my_purchase_bookings': (context) => const MyPurchaseBookingsPage(),
+              '/booking_details': (context) {
+                final args = ModalRoute.of(context)!.settings.arguments
+                    as Map<String, dynamic>;
+                return BookingDetailsPage(
+                  bookingType: args['bookingType'],
+                  booking: args['booking'],
+                );
+              },
             },
           );
         },

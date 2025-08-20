@@ -61,19 +61,15 @@ class NotificationController extends ChangeNotifier {
 
       if (result['statusCode'] == 200) {
         final List<dynamic> notificationsData = result['data'] ?? [];
-        print(
-            '🔍 [DEBUG] Notifications data received: ${notificationsData.length} items');
-        print('🔍 [DEBUG] Notifications data: $notificationsData');
+
 
         final List<NotificationModel> newNotifications = notificationsData
             .map((json) => NotificationModel.fromJson(json))
             .toList();
 
-        print(
-            '🔍 [DEBUG] Parsed notifications: ${newNotifications.length} items');
+
         for (int i = 0; i < newNotifications.length; i++) {
-          print(
-              '🔍 [DEBUG] Notification $i: ${newNotifications[i].title} - ${newNotifications[i].message}');
+
         }
 
         if (refresh) {
@@ -230,7 +226,7 @@ class NotificationController extends ChangeNotifier {
       }
     } catch (e) {
       // Silently handle error for unread count
-      print('Error getting unread count: $e');
+      // Handle error silently
     }
   }
 
@@ -240,7 +236,7 @@ class NotificationController extends ChangeNotifier {
       final result = await NotificationService.createMeetingReminders();
 
       if (result['statusCode'] == 200) {
-        print('Meeting reminder notifications created successfully');
+  
         // Optionally refresh notifications after creating reminders
         await getNotifications(refresh: true);
       } else {
