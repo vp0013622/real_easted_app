@@ -209,20 +209,15 @@ class _SettingsPageState extends State<SettingsPage> {
                     // Settings Sections
                     AppSettingsSection(
                       settings: {
-                        'language': 'English',
                         'currency': 'INR',
                         'theme': themeProvider.currentTheme,
                         'notificationsEnabled': true,
                         'hapticFeedbackEnabled': true,
-                        'fontSize': themeProvider.fontSize,
                         'dateRange': '30d',
                         'itemsPerPage': '20',
-                        'timeFormat': '12h',
-                        'dateFormat': 'MM/dd/yyyy',
                       },
                       onSettingsChanged: (settings) {
                         // TODO: Implement app settings update
-                    
                       },
                     ),
                     const SizedBox(height: 16),
@@ -349,36 +344,6 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () => _exportSettings(),
-                icon: const Icon(Icons.download),
-                label: const Text('Export Settings'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () => _showDeleteConfirmation(),
-                icon: const Icon(Icons.delete_forever),
-                label: const Text('Delete Settings'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-            ),
-          ],
-        ),
       ],
     );
   }
@@ -409,46 +374,6 @@ class _SettingsPageState extends State<SettingsPage> {
         ],
       ),
     );
-  }
-
-  void _showDeleteConfirmation() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Settings'),
-        content: const Text(
-          'Are you sure you want to delete all settings? This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              if (_currentUser != null) {
-                _settingsController.deleteUserSettings(_currentUser!.id);
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _exportSettings() {
-    if (_settingsController.userSettings != null) {
-      // In a real app, you would export to file or share
-      AppSnackBar.showSnackBar(
-        context,
-        'Info',
-        'Settings export feature coming soon!',
-        ContentType.help,
-      );
-    }
   }
 
   void _saveSettings() async {

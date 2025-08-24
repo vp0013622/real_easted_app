@@ -22,41 +22,17 @@ class AppSettingsSection extends StatefulWidget {
 }
 
 class _AppSettingsSectionState extends State<AppSettingsSection> {
-  late String _selectedLanguage;
   late String _selectedCurrency;
   late String _selectedTheme;
   late bool _notificationsEnabled;
   late bool _hapticFeedbackEnabled;
-  late String _fontSize;
   late String _dateRange;
   late String _itemsPerPage;
-  late String _timeFormat;
-  late String _dateFormat;
 
-  final List<String> _languageOptions = [
-    'English',
-    'Spanish',
-    'French',
-    'German'
-  ];
   final List<String> _currencyOptions = ['INR', 'USD', 'EUR', 'GBP'];
   final List<String> _themeOptions = ['light', 'dark'];
-  final List<String> _fontSizeOptions = [
-    '0.8',
-    '0.9',
-    '1.0',
-    '1.1',
-    '1.2',
-    '1.3'
-  ];
   final List<String> _dateRangeOptions = ['7d', '30d', '90d', '1y'];
   final List<String> _itemsPerPageOptions = ['10', '20', '50', '100'];
-  final List<String> _timeFormatOptions = ['12h', '24h'];
-  final List<String> _dateFormatOptions = [
-    'MM/dd/yyyy',
-    'dd/MM/yyyy',
-    'yyyy-MM-dd'
-  ];
 
   @override
   void initState() {
@@ -68,15 +44,11 @@ class _AppSettingsSectionState extends State<AppSettingsSection> {
     // Load from ThemeProvider first, then fallback to widget settings
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
 
-    _selectedLanguage = widget.settings['language'] ?? 'English';
     _notificationsEnabled = widget.settings['notificationsEnabled'] ?? true;
     _hapticFeedbackEnabled = widget.settings['hapticFeedbackEnabled'] ?? true;
     _selectedTheme = themeProvider.currentTheme;
-    _fontSize = themeProvider.fontSize;
     _dateRange = widget.settings['dateRange'] ?? '30d';
     _itemsPerPage = widget.settings['itemsPerPage'] ?? '20';
-    _timeFormat = widget.settings['timeFormat'] ?? '12h';
-    _dateFormat = widget.settings['dateFormat'] ?? 'MM/dd/yyyy';
   }
 
   void _updateSetting(String key, dynamic value) {
@@ -90,9 +62,6 @@ class _AppSettingsSectionState extends State<AppSettingsSection> {
     switch (key) {
       case 'theme':
         themeProvider.updateTheme(value);
-        break;
-      case 'fontSize':
-        themeProvider.updateFontSize(value);
         break;
     }
   }
@@ -108,7 +77,6 @@ class _AppSettingsSectionState extends State<AppSettingsSection> {
       builder: (context, themeProvider, child) {
         // Update local state when theme provider changes
         _selectedTheme = themeProvider.currentTheme;
-        _fontSize = themeProvider.fontSize;
 
         return SettingsSection(
           title: 'App Settings',
@@ -121,21 +89,13 @@ class _AppSettingsSectionState extends State<AppSettingsSection> {
               const Divider(),
               _buildChangePasswordButton(),
               const Divider(),
-              _buildLanguageSetting(),
-              const Divider(),
               _buildNotificationsSetting(),
               const Divider(),
               _buildThemeSetting(),
               const Divider(),
-              _buildFontSizeSetting(),
-              const Divider(),
               _buildDateRangeSetting(),
               const Divider(),
               _buildItemsPerPageSetting(),
-              const Divider(),
-              _buildTimeFormatSetting(),
-              const Divider(),
-              _buildDateFormatSetting(),
               const Divider(),
             ],
           ),
@@ -190,16 +150,6 @@ class _AppSettingsSectionState extends State<AppSettingsSection> {
     );
   }
 
-  Widget _buildLanguageSetting() {
-    return ListTile(
-      leading: const Icon(Icons.language, color: AppColors.brandPrimary),
-      title: const Text('Language'),
-      subtitle: Text(_selectedLanguage),
-      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-      onTap: () => _showLanguageDialog(),
-    );
-  }
-
   Widget _buildNotificationsSetting() {
     return SwitchListTile(
       secondary: const Icon(Icons.notifications, color: AppColors.brandPrimary),
@@ -234,31 +184,6 @@ class _AppSettingsSectionState extends State<AppSettingsSection> {
               _selectedTheme = value;
             });
             _updateSetting('theme', value);
-          }
-        },
-      ),
-    );
-  }
-
-  Widget _buildFontSizeSetting() {
-    return ListTile(
-      leading: const Icon(Icons.text_fields, color: AppColors.brandPrimary),
-      title: const Text('Font Size'),
-      subtitle: Text('${_fontSize}x'),
-      trailing: DropdownButton<String>(
-        value: _fontSize,
-        items: _fontSizeOptions.map((size) {
-          return DropdownMenuItem(
-            value: size,
-            child: Text('${size}x'),
-          );
-        }).toList(),
-        onChanged: (value) {
-          if (value != null) {
-            setState(() {
-              _fontSize = value;
-            });
-            _updateSetting('fontSize', value);
           }
         },
       ),
@@ -311,82 +236,6 @@ class _AppSettingsSectionState extends State<AppSettingsSection> {
             _updateSetting('itemsPerPage', value);
           }
         },
-      ),
-    );
-  }
-
-  Widget _buildTimeFormatSetting() {
-    return ListTile(
-      leading: const Icon(Icons.access_time, color: AppColors.brandPrimary),
-      title: const Text('Time Format'),
-      subtitle: Text(_timeFormat),
-      trailing: DropdownButton<String>(
-        value: _timeFormat,
-        items: _timeFormatOptions.map((format) {
-          return DropdownMenuItem(
-            value: format,
-            child: Text(format),
-          );
-        }).toList(),
-        onChanged: (value) {
-          if (value != null) {
-            setState(() {
-              _timeFormat = value;
-            });
-            _updateSetting('timeFormat', value);
-          }
-        },
-      ),
-    );
-  }
-
-  Widget _buildDateFormatSetting() {
-    return ListTile(
-      leading: const Icon(Icons.calendar_today, color: AppColors.brandPrimary),
-      title: const Text('Date Format'),
-      subtitle: Text(_dateFormat),
-      trailing: DropdownButton<String>(
-        value: _dateFormat,
-        items: _dateFormatOptions.map((format) {
-          return DropdownMenuItem(
-            value: format,
-            child: Text(format),
-          );
-        }).toList(),
-        onChanged: (value) {
-          if (value != null) {
-            setState(() {
-              _dateFormat = value;
-            });
-            _updateSetting('dateFormat', value);
-          }
-        },
-      ),
-    );
-  }
-
-  void _showLanguageDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Select Language'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: _languageOptions.map((language) {
-            return RadioListTile<String>(
-              title: Text(language),
-              value: language,
-              groupValue: _selectedLanguage,
-              onChanged: (value) {
-                setState(() {
-                  _selectedLanguage = value!;
-                });
-                _updateSetting('language', value);
-                Navigator.pop(context);
-              },
-            );
-          }).toList(),
-        ),
       ),
     );
   }
