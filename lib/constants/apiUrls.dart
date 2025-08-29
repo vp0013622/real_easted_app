@@ -110,6 +110,7 @@ class ApiUrls {
       '$baseUrl/meetingschedule/notpublished';
   static String get getMeetingScheduleById =>
       '$baseUrl/meetingschedule/scheduledByUserId/';
+  static String get getMeetingById => '$baseUrl/meetingschedule/';
   static String get createMeetingSchedule => '$baseUrl/meetingschedule/create';
   static String get editMeetingSchedule => '$baseUrl/meetingschedule/edit/';
   static String get deleteMeetingSchedule => '$baseUrl/meetingschedule/delete/';
@@ -132,7 +133,8 @@ class ApiUrls {
   static String get deleteNotificationById => '$baseUrl/notifications/delete/';
   static String get getUserNotifications => '$baseUrl/notifications/user/';
   static String get markNotificationAsRead => '$baseUrl/notifications/read/';
-  static String get markNotificationAsUnread => '$baseUrl/notifications/unread/';
+  static String get markNotificationAsUnread =>
+      '$baseUrl/notifications/unread/';
   static String get markAllNotificationsAsRead =>
       '$baseUrl/notifications/read-all/';
   static String get deleteNotification => '$baseUrl/notifications/delete/';
@@ -153,4 +155,13 @@ class ApiUrls {
   //dashboard
   static String get getDashboardOverview => '$baseUrl/dashboard/overview';
   static String get getTodaySchedules => '$baseUrl/dashboard/today-schedules';
+
+  //admin booking endpoints
+  static String get getAllPurchaseBookings => '$baseUrl/purchase-bookings/all';
+  static String get getAllRentalBookings => '$baseUrl/rental-bookings/all';
+  static String get getPurchaseBookingById => '$baseUrl/purchase-bookings/';
+  static String get getRentalBookingById => '$baseUrl/rental-bookings/';
+  static String get confirmPurchaseBooking =>
+      '$baseUrl/purchase-bookings/confirm/';
+  static String get confirmRentalBooking => '$baseUrl/rental-bookings/confirm/';
 }

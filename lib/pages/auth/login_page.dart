@@ -110,7 +110,7 @@ class _LoginPageState extends State<LoginPage> {
 
                         //forgot password container
 
-                        //login elevated button container
+                        //sign in elevated button container
                         Container(
                           width: double.infinity,
                           height: 50,
@@ -135,7 +135,7 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                             onPressed: () async {
                               if (_formKey.currentState!.validate()) {
-                                // Proceed with login
+                                // Proceed with sign in
                                 var email = _email.text.trim();
                                 var password = _password.text.trim();
                                 var response =

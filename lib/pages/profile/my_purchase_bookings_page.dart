@@ -42,7 +42,8 @@ class _MyPurchaseBookingsPageState extends State<MyPurchaseBookingsPage> {
 
       if (_currentUserId != null) {
         // Load purchase bookings only
-        final purchaseResponse = await _bookingService.getMyPurchaseBookings(_currentUserId!);
+        final purchaseResponse =
+            await _bookingService.getMyPurchaseBookings(_currentUserId!);
         setState(() {
           _purchaseBookings = purchaseResponse['data'] ?? [];
         });
@@ -59,8 +60,10 @@ class _MyPurchaseBookingsPageState extends State<MyPurchaseBookingsPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBackgroundColor = isDark ? AppColors.darkCardBackground : AppColors.lightCardBackground;
-    final textColor = isDark ? AppColors.darkWhiteText : AppColors.lightDarkText;
+    final cardBackgroundColor =
+        isDark ? AppColors.darkCardBackground : AppColors.lightCardBackground;
+    final textColor =
+        isDark ? AppColors.darkWhiteText : AppColors.lightDarkText;
 
     if (_isLoading) {
       return Scaffold(
@@ -78,13 +81,15 @@ class _MyPurchaseBookingsPageState extends State<MyPurchaseBookingsPage> {
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
-          child: _buildPurchaseBookingsSection(context, cardBackgroundColor, textColor),
+          child: _buildPurchaseBookingsSection(
+              context, cardBackgroundColor, textColor),
         ),
       ),
     );
   }
 
-  Widget _buildPurchaseBookingsSection(BuildContext context, Color cardBackgroundColor, Color textColor) {
+  Widget _buildPurchaseBookingsSection(
+      BuildContext context, Color cardBackgroundColor, Color textColor) {
     return Container(
       decoration: BoxDecoration(
         color: cardBackgroundColor,
@@ -113,13 +118,14 @@ class _MyPurchaseBookingsPageState extends State<MyPurchaseBookingsPage> {
                 Text(
                   'Purchase Bookings',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: textColor,
-                    fontWeight: FontWeight.bold,
-                  ),
+                        color: textColor,
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: AppColors.brandSecondary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
@@ -165,7 +171,8 @@ class _MyPurchaseBookingsPageState extends State<MyPurchaseBookingsPage> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               itemCount: _purchaseBookings.length,
               separatorBuilder: (context, index) => const Divider(height: 1),
-              itemBuilder: (context, index) => _buildPurchaseBookingCard(context, _purchaseBookings[index]),
+              itemBuilder: (context, index) =>
+                  _buildPurchaseBookingCard(context, _purchaseBookings[index]),
             ),
           const SizedBox(height: 20),
         ],
@@ -175,8 +182,9 @@ class _MyPurchaseBookingsPageState extends State<MyPurchaseBookingsPage> {
 
   Widget _buildPurchaseBookingCard(BuildContext context, dynamic booking) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? AppColors.darkWhiteText : AppColors.lightDarkText;
-    
+    final textColor =
+        isDark ? AppColors.darkWhiteText : AppColors.lightDarkText;
+
     return InkWell(
       onTap: () => _navigateToBookingDetails(context, booking),
       child: Padding(
@@ -232,7 +240,8 @@ class _MyPurchaseBookingsPageState extends State<MyPurchaseBookingsPage> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: _getStatusColor(booking['bookingStatus']).withOpacity(0.1),
+                color:
+                    _getStatusColor(booking['bookingStatus']).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -276,12 +285,44 @@ class _MyPurchaseBookingsPageState extends State<MyPurchaseBookingsPage> {
   }
 
   void _navigateToBookingDetails(BuildContext context, dynamic booking) {
-    Navigator.pushNamed(
-      context,
-      '/booking_details',
-      arguments: {
-        'bookingType': 'purchase',
-        'booking': booking,
+    // Show confirmation dialog before navigating
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('View Purchase Booking Details'),
+          content: Text(
+              'Are you sure you want to view the details of this purchase booking?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Show "coming soon" message instead of navigating
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: Text('Feature Coming Soon'),
+                      content: Text(
+                          'The purchase booking details feature will be available in the next update.'),
+                      actions: [
+                        ElevatedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: Text('OK'),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+              child: Text('View Details'),
+            ),
+          ],
+        );
       },
     );
   }

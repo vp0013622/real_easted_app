@@ -21,7 +21,7 @@ class EnvironmentConfig {
   static String get baseUrl {
     // 🏠 FOR LOCAL DEVELOPMENT - Uncomment the local URL and comment the production URL
     //return 'http://10.188.148.166:3001/api'; // Local development //my network
-    //return 'http://192.168.0.160:3001/api'; // Local development //office network 1
+    //return 'http://192.168.0.184:3001/api'; // Local development //office network 1 netu
     //return 'http://192.168.0.176:3001/api'; // Local development //office network 2
 
     // 🌐 FOR PRODUCTION - Uncomment the production URL and comment the local URL

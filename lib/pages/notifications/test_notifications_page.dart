@@ -37,7 +37,7 @@ class _TestNotificationsPageState extends State<TestNotificationsPage> {
       final userId = await _getCurrentUserId();
       if (userId == null) {
         setState(() {
-          _error = 'User not found. Please login again.';
+          _error = 'User not found. Please sign in again.';
           _isLoading = false;
         });
         return;
@@ -48,7 +48,7 @@ class _TestNotificationsPageState extends State<TestNotificationsPage> {
 
       if (authToken == null) {
         setState(() {
-          _error = 'Authentication token not found. Please login again.';
+          _error = 'Authentication token not found. Please sign in again.';
           _isLoading = false;
         });
         return;

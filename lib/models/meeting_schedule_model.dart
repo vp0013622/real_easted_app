@@ -47,9 +47,17 @@ class MeetingSchedule {
       endTime: json['endTime'],
       duration: json['duration'],
       status: json['status'] ?? '',
-      scheduledByUserId: json['scheduledByUserId'] ?? '',
-      customerId: json['customerId'] ?? '',
-      propertyId: json['propertyId'],
+      scheduledByUserId: json['scheduledByUserId'] is Map
+          ? (json['scheduledByUserId']['_id'] ??
+              json['scheduledByUserId']['id'] ??
+              '')
+          : (json['scheduledByUserId'] ?? ''),
+      customerId: json['customerId'] is Map
+          ? (json['customerId']['_id'] ?? json['customerId']['id'] ?? '')
+          : (json['customerId'] ?? ''),
+      propertyId: json['propertyId'] is Map
+          ? (json['propertyId']['_id'] ?? json['propertyId']['id'] ?? '')
+          : json['propertyId'],
       notes: json['notes'] ?? '',
       createdByUserId: json['createdByUserId'] ?? '',
       updatedByUserId: json['updatedByUserId'] ?? '',

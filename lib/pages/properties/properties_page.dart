@@ -18,6 +18,7 @@ import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:inhabit_realties/pages/properties/property_details_page.dart';
 import 'package:inhabit_realties/controllers/favoriteProperty/favoritePropertyController.dart';
 import 'package:provider/provider.dart';
+import 'package:inhabit_realties/services/pagination_service.dart';
 
 class PropertiesPage extends StatefulWidget {
   const PropertiesPage({super.key});
@@ -46,6 +47,13 @@ class _PropertyPageState extends State<PropertiesPage>
   bool _showFavoritesOnly = false;
   Map<String, bool> _favoriteStatus = {};
 
+  // Pagination variables
+  bool isLoadingMore = false;
+  bool hasMoreData = true;
+  static const int itemsPerPage = 20;
+  int currentPage = 0;
+  int totalItems = 0;
+
   @override
   void initState() {
     super.initState();
@@ -70,7 +78,78 @@ class _PropertyPageState extends State<PropertiesPage>
       ),
     );
 
+    // Add scroll listener for pagination
+    _scrollController.addListener(_onScroll);
+
     _loadData();
+  }
+
+  // Scroll listener for pagination
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      if (!isLoadingMore && hasMoreData) {
+        _loadMoreData();
+      }
+    }
+  }
+
+  // Load more data for pagination
+  Future<void> _loadMoreData() async {
+    if (isLoadingMore || !hasMoreData) return;
+
+    setState(() {
+      isLoadingMore = true;
+    });
+
+    try {
+      // Simulate loading more data (in real app, this would be an API call)
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // Get next batch of properties
+      final nextBatch = _getNextBatch();
+      if (nextBatch.isNotEmpty) {
+        setState(() {
+          properties.addAll(nextBatch);
+          filteredProperties = _applyFilters(properties);
+          currentPage++;
+        });
+      } else {
+        setState(() {
+          hasMoreData = false;
+        });
+      }
+    } catch (e) {
+      // Handle error
+    } finally {
+      setState(() {
+        isLoadingMore = false;
+      });
+    }
+  }
+
+  // Get next batch of properties (simulated pagination)
+  List<PropertyModel> _getNextBatch() {
+    // This is a simulation - in real app, you'd make an API call
+    // For now, we'll just return empty to show the pagination structure
+    return [];
+  }
+
+  // Apply filters to the properties list
+  List<PropertyModel> _applyFilters(List<PropertyModel> allProperties) {
+    List<PropertyModel> filtered = List.from(allProperties);
+    
+    if (_searchController.text.isNotEmpty) {
+      final query = _searchController.text.toLowerCase();
+      filtered = filtered.where((property) =>
+          property.name.toLowerCase().contains(query) ||
+          property.description.toLowerCase().contains(query)).toList();
+    }
+
+    if (_showFavoritesOnly) {
+      filtered = filtered.where((property) => _favoriteStatus[property.id] == true).toList();
+    }
+
+    return filtered;
   }
 
   Future<void> _loadData() async {
@@ -87,6 +166,8 @@ class _PropertyPageState extends State<PropertiesPage>
     setState(() {
       isPageLoading = false;
       isInitialLoading = false;
+      totalItems = properties.length;
+      hasMoreData = properties.length >= itemsPerPage;
     });
     _animationController.forward();
   }
@@ -622,6 +703,7 @@ class _PropertyPageState extends State<PropertiesPage>
                   else
                     Expanded(
                       child: CustomScrollView(
+                        controller: _scrollController,
                         physics: const BouncingScrollPhysics(),
                         slivers: [
                           SliverPadding(
@@ -630,11 +712,18 @@ class _PropertyPageState extends State<PropertiesPage>
                             ),
                             sliver: SliverList(
                               delegate: SliverChildBuilderDelegate(
-                                (context, index) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 20),
-                                  child: _buildPropertyCard(context, index),
-                                ),
-                                childCount: filteredProperties.length,
+                                (context, index) {
+                                  // Show loading indicator at the bottom
+                                  if (index == filteredProperties.length) {
+                                    return _buildLoadingIndicator();
+                                  }
+                                  
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 20),
+                                    child: _buildPropertyCard(context, index),
+                                  );
+                                },
+                                childCount: filteredProperties.length + (hasMoreData ? 1 : 0),
                               ),
                             ),
                           ),
@@ -644,6 +733,36 @@ class _PropertyPageState extends State<PropertiesPage>
                 ],
               ),
             ),
+    );
+  }
+
+  // Build loading indicator for pagination
+  Widget _buildLoadingIndicator() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Center(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Loading more properties...',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

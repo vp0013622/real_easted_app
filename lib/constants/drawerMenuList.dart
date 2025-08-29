@@ -19,6 +19,16 @@ class DrawerMenuList {
       'title': 'Meeting Schedules',
     },
     {
+      'path': '/all_purchase_bookings',
+      'icon': CupertinoIcons.bag_fill,
+      'title': 'All Purchase Bookings',
+    },
+    {
+      'path': '/all_rental_bookings',
+      'icon': CupertinoIcons.house_fill,
+      'title': 'All Rental Bookings',
+    },
+    {
       'path': '/settings',
       'icon': CupertinoIcons.settings_solid,
       'title': 'Settings',

@@ -2,24 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:inhabit_realties/constants/contants.dart';
 import 'package:inhabit_realties/controllers/lead/leadsController.dart';
 import 'package:inhabit_realties/models/lead/LeadsModel.dart';
-import 'package:inhabit_realties/pages/leads/widgets/appAppBar.dart';
-import 'package:inhabit_realties/pages/leads/widgets/addNewLeadButton.dart';
-import 'package:inhabit_realties/pages/widgets/appCard.dart';
-import 'package:inhabit_realties/pages/widgets/appSpinner.dart';
-import 'package:inhabit_realties/pages/widgets/app_search_bar.dart';
-import 'package:inhabit_realties/pages/leads/lead_details_page.dart';
-import 'package:inhabit_realties/services/lead/leadsService.dart';
 import 'package:inhabit_realties/models/lead/LeadStatusModel.dart';
 import 'package:inhabit_realties/models/lead/FollowUpStatusModel.dart';
 import 'package:inhabit_realties/models/lead/ReferenceSourceModel.dart';
-import 'package:inhabit_realties/services/user/userService.dart';
 import 'package:inhabit_realties/models/auth/UsersModel.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
-import 'package:inhabit_realties/providers/leads_page_provider.dart';
+import 'package:inhabit_realties/services/lead/leadsService.dart';
+import 'package:inhabit_realties/services/user/userService.dart';
+import 'package:inhabit_realties/pages/leads/widgets/appAppBar.dart';
+import 'package:inhabit_realties/pages/widgets/appSpinner.dart';
+import 'package:inhabit_realties/pages/widgets/app_search_bar.dart';
+import 'package:inhabit_realties/pages/leads/lead_details_page.dart';
+import 'package:inhabit_realties/pages/leads/widgets/addNewLeadButton.dart';
 import 'package:inhabit_realties/constants/status_utils.dart';
 import 'package:inhabit_realties/controllers/notification/notificationController.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class LeadsPage extends StatefulWidget {
   const LeadsPage({super.key});
@@ -36,11 +34,19 @@ class _LeadsPageState extends State<LeadsPage> with TickerProviderStateMixin {
   late final AnimationController _staggerController;
   late final Animation<double> _fadeAnimation;
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
 
   bool isPageLoading = false;
   bool isInitialLoading = true;
+  bool isLoadingMore = false;
+  bool hasMoreData = true;
   List<LeadsModel> leads = [];
   List<LeadsModel> filteredLeads = [];
+  
+  // Pagination settings
+  static const int itemsPerPage = 20;
+  int currentPage = 0;
+  int totalItems = 0;
 
   // Filter data
   List<LeadStatusModel> leadStatuses = [];
@@ -75,6 +81,9 @@ class _LeadsPageState extends State<LeadsPage> with TickerProviderStateMixin {
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
 
+    // Add scroll listener for pagination
+    _scrollController.addListener(_onScroll);
+
     _loadData();
   }
 
@@ -83,7 +92,92 @@ class _LeadsPageState extends State<LeadsPage> with TickerProviderStateMixin {
     _animationController.dispose();
     _staggerController.dispose();
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  // Scroll listener for pagination
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      if (!isLoadingMore && hasMoreData) {
+        _loadMoreData();
+      }
+    }
+  }
+
+  // Load more data for pagination
+  Future<void> _loadMoreData() async {
+    if (isLoadingMore || !hasMoreData) return;
+
+    setState(() {
+      isLoadingMore = true;
+    });
+
+    try {
+      // Simulate loading more data (in real app, this would be an API call)
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // Get next batch of leads
+      final nextBatch = _getNextBatch();
+      if (nextBatch.isNotEmpty) {
+        setState(() {
+          leads.addAll(nextBatch);
+          filteredLeads = _applyFilters(leads);
+          currentPage++;
+        });
+      } else {
+        setState(() {
+          hasMoreData = false;
+        });
+      }
+    } catch (e) {
+      // Handle error
+    } finally {
+      setState(() {
+        isLoadingMore = false;
+      });
+    }
+  }
+
+  // Get next batch of leads (simulated pagination)
+  List<LeadsModel> _getNextBatch() {
+    // This is a simulation - in real app, you'd make an API call
+    // For now, we'll just return empty to show the pagination structure
+    return [];
+  }
+
+  // Apply filters to the leads list
+  List<LeadsModel> _applyFilters(List<LeadsModel> allLeads) {
+    List<LeadsModel> filtered = List.from(allLeads);
+    
+    if (searchQuery.isNotEmpty) {
+      filtered = filtered.where((lead) =>
+          lead.fullName.toLowerCase().contains(searchQuery.toLowerCase()) ||
+          lead.leadEmail.toLowerCase().contains(searchQuery.toLowerCase()) ||
+          lead.leadPhoneNumber.contains(searchQuery)).toList();
+    }
+
+    if (selectedLeadStatus != null) {
+      filtered = filtered.where((lead) => lead.leadStatus == selectedLeadStatus).toList();
+    }
+
+    if (selectedFollowUpStatus != null) {
+      filtered = filtered.where((lead) => lead.followUpStatus == selectedFollowUpStatus).toList();
+    }
+
+    if (selectedReferenceSource != null) {
+      filtered = filtered.where((lead) => lead.referanceFrom?.id == selectedReferenceSource).toList();
+    }
+
+    if (selectedAssignedBy != null) {
+      filtered = filtered.where((lead) => lead.assignedByUserId == selectedAssignedBy).toList();
+    }
+
+    if (selectedAssignedTo != null) {
+      filtered = filtered.where((lead) => lead.assignedToUserId == selectedAssignedTo).toList();
+    }
+
+    return filtered;
   }
 
   Future<void> _loadData() async {
@@ -91,29 +185,20 @@ class _LeadsPageState extends State<LeadsPage> with TickerProviderStateMixin {
       isPageLoading = true;
       isInitialLoading = true;
     });
+    await getAllLeadStatuses();
+    await getAllFollowUpStatuses();
+    await getAllReferenceSources();
+    await getAllUsers();
+    await loadLeads();
 
-    try {
-      await Future.wait([
-        _leadsController.loadLeads(),
-        _loadFilterData(),
-      ]);
-
-      if (mounted) {
-        setState(() {
-          leads = _leadsController.leads;
-          filteredLeads = List.from(leads);
-          isPageLoading = false;
-          isInitialLoading = false;
-        });
-        _animationController.forward();
-        _staggerController.forward();
-      }
-    } catch (error) {
-      // Handle error silently
-    }
+    setState(() {
+      isPageLoading = false;
+      isInitialLoading = false;
+    });
+    _animationController.forward();
   }
 
-  Future<void> _loadFilterData() async {
+  Future<void> loadLeads() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token') ?? '';
@@ -121,101 +206,151 @@ class _LeadsPageState extends State<LeadsPage> with TickerProviderStateMixin {
       final decodedCurrentUser = jsonDecode(currentUser);
       final userId = decodedCurrentUser['_id'] ?? '';
 
-      // Load lead statuses
-      final leadStatusResult =
-          await _leadsService.getAllLeadStatuses(token, userId);
-      if (leadStatusResult['statusCode'] == 200) {
-        final statusData = leadStatusResult['data'] as List;
-        leadStatuses =
-            statusData.map((json) => LeadStatusModel.fromJson(json)).toList();
-        // Update StatusUtils with the loaded statuses
-        StatusUtils.setLeadStatuses(leadStatuses);
-      }
+      final response = await _leadsService.getAllLeads(token, userId);
+      if (response['statusCode'] == 200 && mounted) {
+        final data = response['data'];
+        List<dynamic> leadsData = [];
 
-      // Load follow-up statuses
-      final followUpResult =
-          await _leadsService.getAllFollowUpStatuses(token, userId);
-      if (followUpResult['statusCode'] == 200) {
-        final followUpData = followUpResult['data'] as List;
-        followUpStatuses = followUpData
-            .map((json) => FollowUpStatusModel.fromJson(json))
-            .toList();
-        // Update StatusUtils with the loaded follow-up statuses
-        StatusUtils.setFollowUpStatuses(followUpStatuses);
-      }
+        if (data is Map && data.containsKey('value')) {
+          leadsData = data['value'] ?? [];
+        } else if (data is List) {
+          leadsData = data;
+        } else {
+          leadsData = [];
+        }
 
-      // Load reference sources
-      final referenceResult =
-          await _leadsService.getAllReferenceSources(token, userId);
-      if (referenceResult['statusCode'] == 200) {
-        final referenceData = referenceResult['data'] as List;
-        referenceSources = referenceData
-            .map((json) => ReferenceSourceModel.fromJson(json))
-            .toList();
+        setState(() {
+          leads = leadsData.map((item) => LeadsModel.fromJson(item)).toList();
+          filteredLeads = _applyFilters(leads);
+          totalItems = leads.length;
+          hasMoreData = leads.length >= itemsPerPage;
+        });
       }
-
-      // Load users for assigned by/to filters
-      final usersResult = await _userService.getAllUsers(token);
-      if (usersResult['statusCode'] == 200) {
-        final usersData = usersResult['data'] as List;
-        users = usersData.map((json) => UsersModel.fromJson(json)).toList();
-      }
-    } catch (error) {
-      // Handle error silently
+    } catch (e) {
+      // Handle error
     }
   }
 
-  void _applyFilters() {
+  Future<void> getAllLeadStatuses() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+      final currentUser = prefs.getString('currentUser') ?? '';
+      final decodedCurrentUser = jsonDecode(currentUser);
+      final userId = decodedCurrentUser['_id'] ?? '';
+
+      final response = await _leadsService.getAllLeadStatuses(token, userId);
+      if (response['statusCode'] == 200 && mounted) {
+        setState(() {
+          leadStatuses = (response['data'] as List)
+              .map((item) => LeadStatusModel.fromJson(item))
+              .toList();
+        });
+      }
+    } catch (e) {
+      // Handle error
+    }
+  }
+
+  Future<void> getAllFollowUpStatuses() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+      final currentUser = prefs.getString('currentUser') ?? '';
+      final decodedCurrentUser = jsonDecode(currentUser);
+      final userId = decodedCurrentUser['_id'] ?? '';
+
+      final response = await _leadsService.getAllFollowUpStatuses(token, userId);
+      if (response['statusCode'] == 200 && mounted) {
+        setState(() {
+          followUpStatuses = (response['data'] as List)
+              .map((item) => FollowUpStatusModel.fromJson(item))
+              .toList();
+        });
+      }
+    } catch (e) {
+      // Handle error
+    }
+  }
+
+  Future<void> getAllReferenceSources() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+      final currentUser = prefs.getString('currentUser') ?? '';
+      final decodedCurrentUser = jsonDecode(currentUser);
+      final userId = decodedCurrentUser['_id'] ?? '';
+
+      final response = await _leadsService.getAllReferenceSources(token, userId);
+      if (response['statusCode'] == 200 && mounted) {
+        setState(() {
+          referenceSources = (response['data'] as List)
+              .map((item) => ReferenceSourceModel.fromJson(item))
+              .toList();
+        });
+      }
+    } catch (e) {
+      // Handle error
+    }
+  }
+
+  Future<void> getAllUsers() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+
+      final response = await _userService.getAllUsers(token);
+      if (response['statusCode'] == 200 && mounted) {
+        setState(() {
+          users = (response['data'] as List)
+              .map((item) => UsersModel.fromJson(item))
+              .toList();
+        });
+      }
+    } catch (e) {
+      // Handle error
+    }
+  }
+
+  void _handleSearch(String query) {
     setState(() {
-      filteredLeads = leads.where((lead) {
-        // Lead status filter
-        if (selectedLeadStatus != null &&
-            lead.leadStatus != selectedLeadStatus) {
-          return false;
-        }
+      searchQuery = query;
+      filteredLeads = _applyFilters(leads);
+    });
+  }
 
-        // Follow-up status filter
-        if (selectedFollowUpStatus != null &&
-            lead.followUpStatus != selectedFollowUpStatus) {
-          return false;
-        }
+  void _handleLeadStatusFilter(String? status) {
+    setState(() {
+      selectedLeadStatus = status;
+      filteredLeads = _applyFilters(leads);
+    });
+  }
 
-        // Reference source filter
-        if (selectedReferenceSource != null &&
-            lead.referanceFrom?.id != selectedReferenceSource) {
-          return false;
-        }
+  void _handleFollowUpStatusFilter(String? status) {
+    setState(() {
+      selectedFollowUpStatus = status;
+      filteredLeads = _applyFilters(leads);
+    });
+  }
 
-        // Assigned by filter
-        if (selectedAssignedBy != null &&
-            lead.assignedByUserId != selectedAssignedBy) {
-          return false;
-        }
+  void _handleReferenceSourceFilter(String? source) {
+    setState(() {
+      selectedReferenceSource = source;
+      filteredLeads = _applyFilters(leads);
+    });
+  }
 
-        // Assigned to filter
-        if (selectedAssignedTo != null &&
-            lead.assignedToUserId != selectedAssignedTo) {
-          return false;
-        }
+  void _handleAssignedByFilter(String? userId) {
+    setState(() {
+      selectedAssignedBy = userId;
+      filteredLeads = _applyFilters(leads);
+    });
+  }
 
-        // Search filter
-        if (searchQuery.isNotEmpty) {
-          final firstName = lead.leadFirstName.toLowerCase();
-          final lastName = lead.leadLastName.toLowerCase();
-          final email = lead.leadEmail.toLowerCase();
-          final phone = lead.leadPhoneNumber.toLowerCase();
-          final searchLower = searchQuery.toLowerCase();
-
-          if (!firstName.contains(searchLower) &&
-              !lastName.contains(searchLower) &&
-              !email.contains(searchLower) &&
-              !phone.contains(searchLower)) {
-            return false;
-          }
-        }
-
-        return true;
-      }).toList();
+  void _handleAssignedToFilter(String? userId) {
+    setState(() {
+      selectedAssignedTo = userId;
+      filteredLeads = _applyFilters(leads);
     });
   }
 
@@ -227,16 +362,38 @@ class _LeadsPageState extends State<LeadsPage> with TickerProviderStateMixin {
       selectedAssignedBy = null;
       selectedAssignedTo = null;
       searchQuery = '';
-      _searchController.clear();
-      filteredLeads = List.from(leads);
+      filteredLeads = _applyFilters(leads);
     });
   }
 
-  void _handleSearch(String query) {
-    setState(() {
-      searchQuery = query;
-    });
-    _applyFilters();
+  // Build loading indicator for pagination
+  Widget _buildLoadingIndicator() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Center(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Loading more leads...',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   // Helper methods to extract user information from the lead
@@ -334,10 +491,7 @@ class _LeadsPageState extends State<LeadsPage> with TickerProviderStateMixin {
                 selectedLeadStatus,
                 leadStatuses.map((status) => status.name).toList(),
                 (value) {
-                  setState(() {
-                    selectedLeadStatus = value;
-                  });
-                  _applyFilters();
+                  _handleLeadStatusFilter(value);
                 },
                 secondaryTextColor,
               ),
@@ -346,10 +500,7 @@ class _LeadsPageState extends State<LeadsPage> with TickerProviderStateMixin {
                 selectedFollowUpStatus,
                 followUpStatuses.map((status) => status.name).toList(),
                 (value) {
-                  setState(() {
-                    selectedFollowUpStatus = value;
-                  });
-                  _applyFilters();
+                  _handleFollowUpStatusFilter(value);
                 },
                 secondaryTextColor,
               ),
@@ -358,10 +509,7 @@ class _LeadsPageState extends State<LeadsPage> with TickerProviderStateMixin {
                 selectedReferenceSource,
                 referenceSources.map((source) => source.name).toList(),
                 (value) {
-                  setState(() {
-                    selectedReferenceSource = value;
-                  });
-                  _applyFilters();
+                  _handleReferenceSourceFilter(value);
                 },
                 secondaryTextColor,
               ),
@@ -372,10 +520,7 @@ class _LeadsPageState extends State<LeadsPage> with TickerProviderStateMixin {
                     .map((user) => '${user.firstName} ${user.lastName}')
                     .toList(),
                 (value) {
-                  setState(() {
-                    selectedAssignedBy = value;
-                  });
-                  _applyFilters();
+                  _handleAssignedByFilter(value);
                 },
                 secondaryTextColor,
               ),
@@ -386,10 +531,7 @@ class _LeadsPageState extends State<LeadsPage> with TickerProviderStateMixin {
                     .map((user) => '${user.firstName} ${user.lastName}')
                     .toList(),
                 (value) {
-                  setState(() {
-                    selectedAssignedTo = value;
-                  });
-                  _applyFilters();
+                  _handleAssignedToFilter(value);
                 },
                 secondaryTextColor,
               ),
@@ -543,9 +685,15 @@ class _LeadsPageState extends State<LeadsPage> with TickerProviderStateMixin {
     return RefreshIndicator(
       onRefresh: _loadData,
       child: ListView.builder(
+        controller: _scrollController,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        itemCount: filteredLeads.length,
+        itemCount: filteredLeads.length + (hasMoreData ? 1 : 0),
         itemBuilder: (context, index) {
+          // Show loading indicator at the bottom
+          if (index == filteredLeads.length) {
+            return _buildLoadingIndicator();
+          }
+          
           final lead = filteredLeads[index];
           final animationDelay = index * 0.1;
 

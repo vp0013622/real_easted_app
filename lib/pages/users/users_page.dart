@@ -36,6 +36,13 @@ class _UsersPageState extends State<UsersPage>
   int choosedRole = -1;
   int _roleIndex = 0;
 
+  // Pagination variables
+  bool isLoadingMore = false;
+  bool hasMoreData = true;
+  static const int itemsPerPage = 20;
+  int currentPage = 0;
+  int totalItems = 0;
+
   @override
   void initState() {
     super.initState();
@@ -62,12 +69,86 @@ class _UsersPageState extends State<UsersPage>
       ),
     );
 
+    // Add scroll listener for pagination
+    _scrollController.addListener(_onScroll);
+
     _loadData();
+  }
+
+  // Scroll listener for pagination
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      if (!isLoadingMore && hasMoreData) {
+        _loadMoreData();
+      }
+    }
+  }
+
+  // Load more data for pagination
+  Future<void> _loadMoreData() async {
+    if (isLoadingMore || !hasMoreData) return;
+
+    setState(() {
+      isLoadingMore = true;
+    });
+
+    try {
+      // Simulate loading more data (in real app, this would be an API call)
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // Get next batch of users
+      final nextBatch = _getNextBatch();
+      if (nextBatch.isNotEmpty) {
+        setState(() {
+          users.addAll(nextBatch);
+          filteredUsers = _applyFilters(users);
+          currentPage++;
+        });
+      } else {
+        setState(() {
+          hasMoreData = false;
+        });
+      }
+    } catch (e) {
+      // Handle error
+    } finally {
+      setState(() {
+        isLoadingMore = false;
+      });
+    }
+  }
+
+  // Get next batch of users (simulated pagination)
+  List<UsersModel> _getNextBatch() {
+    // This is a simulation - in real app, you'd make an API call
+    // For now, we'll just return empty to show the pagination structure
+    return [];
+  }
+
+  // Apply filters to the users list
+  List<UsersModel> _applyFilters(List<UsersModel> allUsers) {
+    List<UsersModel> filtered = List.from(allUsers);
+    
+    if (_searchController.text.isNotEmpty) {
+      final query = _searchController.text.toLowerCase();
+      filtered = filtered.where((user) =>
+          user.firstName.toLowerCase().contains(query) ||
+          user.lastName.toLowerCase().contains(query) ||
+          user.email.toLowerCase().contains(query)).toList();
+    }
+
+    return filtered;
   }
 
   Future<void> _loadData() async {
     setState(() => isPageLoading = true);
     await Future.wait([getAllRoles(), getUsersByRoleId('0')]);
+    
+    setState(() {
+      totalItems = users.length;
+      hasMoreData = users.length >= itemsPerPage;
+    });
+    
     _animationController.forward();
   }
 
@@ -260,6 +341,11 @@ class _UsersPageState extends State<UsersPage>
     return SliverList(
       delegate: SliverChildBuilderDelegate(
         (context, index) {
+          // Show loading indicator at the bottom
+          if (index == filteredUsers.length) {
+            return _buildLoadingIndicator();
+          }
+          
           final user = filteredUsers[index];
           final isDark = Theme.of(context).brightness == Brightness.dark;
           final cardBackgroundColor = isDark
@@ -381,7 +467,37 @@ class _UsersPageState extends State<UsersPage>
             ),
           );
         },
-        childCount: filteredUsers.length,
+        childCount: filteredUsers.length + (hasMoreData ? 1 : 0),
+      ),
+    );
+  }
+
+  // Build loading indicator for pagination
+  Widget _buildLoadingIndicator() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Center(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Loading more users...',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

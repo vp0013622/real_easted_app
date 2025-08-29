@@ -336,6 +336,33 @@ class MeetingScheduleService {
     }
   }
 
+  // Get meeting details by meeting ID
+  Future<MeetingSchedule> getMeetingById(String meetingId) async {
+    try {
+      final token = await _getToken();
+      if (token == null) {
+        throw Exception('No authentication token found');
+      }
+
+      final response = await http.get(
+        Uri.parse('${ApiUrls.getMeetingById}$meetingId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        return MeetingSchedule.fromJson(data['data']);
+      } else {
+        throw Exception('Failed to load meeting details: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error loading meeting details: $e');
+    }
+  }
+
   // Get user details by ID
   Future<Map<String, dynamic>?> getUserDetails(String userId) async {
     try {

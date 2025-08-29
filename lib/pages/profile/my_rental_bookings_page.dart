@@ -42,7 +42,8 @@ class _MyRentalBookingsPageState extends State<MyRentalBookingsPage> {
 
       if (_currentUserId != null) {
         // Load rental bookings only
-        final rentalResponse = await _bookingService.getMyRentalBookings(_currentUserId!);
+        final rentalResponse =
+            await _bookingService.getMyRentalBookings(_currentUserId!);
         setState(() {
           _rentalBookings = rentalResponse['data'] ?? [];
         });
@@ -59,8 +60,10 @@ class _MyRentalBookingsPageState extends State<MyRentalBookingsPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBackgroundColor = isDark ? AppColors.darkCardBackground : AppColors.lightCardBackground;
-    final textColor = isDark ? AppColors.darkWhiteText : AppColors.lightDarkText;
+    final cardBackgroundColor =
+        isDark ? AppColors.darkCardBackground : AppColors.lightCardBackground;
+    final textColor =
+        isDark ? AppColors.darkWhiteText : AppColors.lightDarkText;
 
     if (_isLoading) {
       return Scaffold(
@@ -78,13 +81,15 @@ class _MyRentalBookingsPageState extends State<MyRentalBookingsPage> {
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
-          child: _buildRentalBookingsSection(context, cardBackgroundColor, textColor),
+          child: _buildRentalBookingsSection(
+              context, cardBackgroundColor, textColor),
         ),
       ),
     );
   }
 
-  Widget _buildRentalBookingsSection(BuildContext context, Color cardBackgroundColor, Color textColor) {
+  Widget _buildRentalBookingsSection(
+      BuildContext context, Color cardBackgroundColor, Color textColor) {
     return Container(
       decoration: BoxDecoration(
         color: cardBackgroundColor,
@@ -113,13 +118,14 @@ class _MyRentalBookingsPageState extends State<MyRentalBookingsPage> {
                 Text(
                   'Rental Bookings',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: textColor,
-                    fontWeight: FontWeight.bold,
-                  ),
+                        color: textColor,
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: AppColors.brandTurnary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
@@ -165,7 +171,8 @@ class _MyRentalBookingsPageState extends State<MyRentalBookingsPage> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               itemCount: _rentalBookings.length,
               separatorBuilder: (context, index) => const Divider(height: 1),
-              itemBuilder: (context, index) => _buildRentalBookingCard(context, _rentalBookings[index]),
+              itemBuilder: (context, index) =>
+                  _buildRentalBookingCard(context, _rentalBookings[index]),
             ),
           const SizedBox(height: 20),
         ],
@@ -175,8 +182,9 @@ class _MyRentalBookingsPageState extends State<MyRentalBookingsPage> {
 
   Widget _buildRentalBookingCard(BuildContext context, dynamic booking) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? AppColors.darkWhiteText : AppColors.lightDarkText;
-    
+    final textColor =
+        isDark ? AppColors.darkWhiteText : AppColors.lightDarkText;
+
     return InkWell(
       onTap: () => _navigateToBookingDetails(context, booking),
       child: Padding(
@@ -232,7 +240,8 @@ class _MyRentalBookingsPageState extends State<MyRentalBookingsPage> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: _getStatusColor(booking['bookingStatus']).withOpacity(0.1),
+                color:
+                    _getStatusColor(booking['bookingStatus']).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -276,12 +285,44 @@ class _MyRentalBookingsPageState extends State<MyRentalBookingsPage> {
   }
 
   void _navigateToBookingDetails(BuildContext context, dynamic booking) {
-    Navigator.pushNamed(
-      context,
-      '/booking_details',
-      arguments: {
-        'bookingType': 'rental',
-        'booking': booking,
+    // Show confirmation dialog before navigating
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('View Rental Booking Details'),
+          content: Text(
+              'Are you sure you want to view the details of this rental booking?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Show "coming soon" message instead of navigating
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: Text('Feature Coming Soon'),
+                      content: Text(
+                          'The rental booking details feature will be available in the next update.'),
+                      actions: [
+                        ElevatedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: Text('OK'),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+              child: Text('View Details'),
+            ),
+          ],
+        );
       },
     );
   }

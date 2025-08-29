@@ -278,7 +278,16 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
               await _countryStateSelector.getStatesByCountryCode(country);
           if (mounted) {
             setState(() {
-              states = statesList;
+              // Remove duplicates based on state name to prevent dropdown assertion errors
+              states = statesList.fold<List<country_state_selector.State>>([],
+                  (list, state) {
+                if (!list.any((existingState) =>
+                    existingState.name.toLowerCase() ==
+                    state.name.toLowerCase())) {
+                  list.add(state);
+                }
+                return list;
+              });
             });
           }
 
@@ -294,7 +303,21 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
                   await _countryStateSelector.getCitiesByCountryCode(country);
               if (mounted) {
                 setState(() {
-                  cities = citiesList;
+                  // Remove duplicates based on city name to fix dropdown assertion error
+                  cities = citiesList.fold<List<City>>([], (list, city) {
+                    if (!list.any((existingCity) =>
+                        existingCity.name.toLowerCase() ==
+                        city.name.toLowerCase())) {
+                      list.add(city);
+                    }
+                    return list;
+                  });
+
+                  // Additional safety check: if cities list is empty, reset selectedCity
+                  if (cities.isEmpty && selectedCity != null) {
+                    selectedCity = null;
+                    _city.text = '';
+                  }
                 });
               }
             } catch (e) {
@@ -424,7 +447,16 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
             await _countryStateSelector.getStatesByCountryCode(country);
         if (mounted) {
           setState(() {
-            states = statesList;
+            // Remove duplicates based on state name to prevent dropdown assertion errors
+            states = statesList.fold<List<country_state_selector.State>>([],
+                (list, state) {
+              if (!list.any((existingState) =>
+                  existingState.name.toLowerCase() ==
+                  state.name.toLowerCase())) {
+                list.add(state);
+              }
+              return list;
+            });
           });
         }
       }
@@ -448,7 +480,20 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
             await _countryStateSelector.getCitiesByCountryCode(country);
         if (mounted) {
           setState(() {
-            cities = citiesList;
+            // Remove duplicates based on city name to fix dropdown assertion error
+            cities = citiesList.fold<List<City>>([], (list, city) {
+              if (!list.any((existingCity) =>
+                  existingCity.name.toLowerCase() == city.name.toLowerCase())) {
+                list.add(city);
+              }
+              return list;
+            });
+
+            // Additional safety check: if cities list is empty, reset selectedCity
+            if (cities.isEmpty && selectedCity != null) {
+              selectedCity = null;
+              _city.text = '';
+            }
           });
         }
       }
@@ -685,13 +730,15 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
               ),
               value: selectedCountry != null &&
                       selectedCountry!.isNotEmpty &&
+                      countries.isNotEmpty &&
                       countries.any((item) =>
                           item.name.toLowerCase() ==
                           selectedCountry!.toLowerCase())
                   ? countries
-                      .firstWhere((item) =>
+                      .where((item) =>
                           item.name.toLowerCase() ==
                           selectedCountry!.toLowerCase())
+                      .first
                       .name
                   : null,
               onChanged: (String? value) async {
@@ -712,8 +759,27 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
                       setState(() {
                         selectedCountry = value;
                         _country.text = value;
-                        states = statesList;
-                        cities = citiesList;
+                        // Remove duplicates based on state name to prevent dropdown assertion errors
+                        states = statesList
+                            .fold<List<country_state_selector.State>>([],
+                                (list, state) {
+                          if (!list.any((existingState) =>
+                              existingState.name.toLowerCase() ==
+                              state.name.toLowerCase())) {
+                            list.add(state);
+                          }
+                          return list;
+                        });
+                        // Remove duplicates based on city name to fix dropdown assertion error
+                        cities = citiesList.fold<List<City>>([], (list, city) {
+                          if (!list.any((existingCity) =>
+                              existingCity.name.toLowerCase() ==
+                              city.name.toLowerCase())) {
+                            list.add(city);
+                          }
+                          return list;
+                        });
+
                         // Reset state and city if they don't exist in the new country
                         if (!statesList.any((s) =>
                             s.name.toLowerCase() ==
@@ -724,6 +790,12 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
                         if (!citiesList.any((c) =>
                             c.name.toLowerCase() ==
                             selectedCity?.toLowerCase())) {
+                          selectedCity = null;
+                          _city.text = '';
+                        }
+
+                        // Additional safety check: if cities list is empty, reset selectedCity
+                        if (cities.isEmpty && selectedCity != null) {
                           selectedCity = null;
                           _city.text = '';
                         }
@@ -750,12 +822,14 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
                 }
                 return null;
               },
-              items: countries.map((Country country) {
-                return DropdownMenuItem<String>(
-                  value: country.name,
-                  child: Text(country.name),
-                );
-              }).toList(),
+              items: countries.isNotEmpty
+                  ? countries.map((Country country) {
+                      return DropdownMenuItem<String>(
+                        value: country.name,
+                        child: Text(country.name),
+                      );
+                    }).toList()
+                  : [],
               dropdownSearchData: DropdownSearchData(
                 searchController: _countrySearchController,
                 searchInnerWidgetHeight: 50,
@@ -797,34 +871,38 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
               ),
               value: selectedState != null &&
                       selectedState!.isNotEmpty &&
+                      states.isNotEmpty &&
                       states.any((item) =>
                           item.name.toLowerCase() ==
                           selectedState!.toLowerCase())
                   ? states
-                      .firstWhere((item) =>
+                      .where((item) =>
                           item.name.toLowerCase() ==
                           selectedState!.toLowerCase())
+                      .first
                       .name
                   : null,
-              items: [
-                // Add the current state if it's not in the list
-                if (selectedState != null &&
-                    selectedState!.isNotEmpty &&
-                    !states.any((item) =>
-                        item.name.toLowerCase() ==
-                        selectedState!.toLowerCase()))
-                  DropdownMenuItem<String>(
-                    value: selectedState,
-                    child: Text('Unknown State: $selectedState',
-                        style: TextStyle(color: Colors.red)),
-                  ),
-                ...states.map((country_state_selector.State state) {
-                  return DropdownMenuItem<String>(
-                    value: state.name,
-                    child: Text(state.name),
-                  );
-                }).toList(),
-              ],
+              items: states.isNotEmpty
+                  ? [
+                      // Add the current state if it's not in the list
+                      if (selectedState != null &&
+                          selectedState!.isNotEmpty &&
+                          !states.any((item) =>
+                              item.name.toLowerCase() ==
+                              selectedState!.toLowerCase()))
+                        DropdownMenuItem<String>(
+                          value: selectedState,
+                          child: Text('Unknown State: $selectedState',
+                              style: TextStyle(color: Colors.red)),
+                        ),
+                      ...states.map((country_state_selector.State state) {
+                        return DropdownMenuItem<String>(
+                          value: state.name,
+                          child: Text(state.name),
+                        );
+                      }).toList(),
+                    ]
+                  : [],
               onChanged: (String? value) async {
                 if (value != null) {
                   try {
@@ -845,7 +923,22 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
 
                       if (mounted) {
                         setState(() {
-                          cities = citiesList;
+                          // Remove duplicates based on city name to fix dropdown assertion error
+                          cities =
+                              citiesList.fold<List<City>>([], (list, city) {
+                            if (!list.any((existingCity) =>
+                                existingCity.name.toLowerCase() ==
+                                city.name.toLowerCase())) {
+                              list.add(city);
+                            }
+                            return list;
+                          });
+
+                          // Additional safety check: if cities list is empty, reset selectedCity
+                          if (cities.isEmpty && selectedCity != null) {
+                            selectedCity = null;
+                            _city.text = '';
+                          }
                         });
                       }
                     }
@@ -910,21 +1003,25 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
               ),
               value: selectedCity != null &&
                       selectedCity!.isNotEmpty &&
+                      cities.isNotEmpty &&
                       cities.any((item) =>
                           item.name.toLowerCase() ==
                           selectedCity!.toLowerCase())
                   ? cities
-                      .firstWhere((item) =>
+                      .where((item) =>
                           item.name.toLowerCase() ==
                           selectedCity!.toLowerCase())
+                      .first
                       .name
                   : null,
-              items: cities.map((City city) {
-                return DropdownMenuItem<String>(
-                  value: city.name,
-                  child: Text(city.name),
-                );
-              }).toList(),
+              items: cities.isNotEmpty
+                  ? cities.map((City city) {
+                      return DropdownMenuItem<String>(
+                        value: city.name,
+                        child: Text(city.name),
+                      );
+                    }).toList()
+                  : [],
               onChanged: (String? value) {
                 if (value != null) {
                   setState(() {

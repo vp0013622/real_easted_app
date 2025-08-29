@@ -36,10 +36,72 @@ class _AllDocumentsPageState extends State<AllDocumentsPage> {
   final TextEditingController _documentTypeSearchController =
       TextEditingController();
 
+  // Pagination variables
+  final ScrollController _scrollController = ScrollController();
+  bool isLoadingMore = false;
+  bool hasMoreData = true;
+  static const int itemsPerPage = 20;
+  int currentPage = 0;
+  int totalItems = 0;
+
   @override
   void initState() {
     super.initState();
+
+    // Add scroll listener for pagination
+    _scrollController.addListener(_onScroll);
+
     _loadInitialData();
+  }
+
+  // Scroll listener for pagination
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      if (!isLoadingMore && hasMoreData) {
+        _loadMoreData();
+      }
+    }
+  }
+
+  // Load more data for pagination
+  Future<void> _loadMoreData() async {
+    if (isLoadingMore || !hasMoreData) return;
+
+    setState(() {
+      isLoadingMore = true;
+    });
+
+    try {
+      // Simulate loading more data (in real app, this would be an API call)
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // Get next batch of documents
+      final nextBatch = _getNextBatch();
+      if (nextBatch.isNotEmpty) {
+        setState(() {
+          _documents.addAll(nextBatch);
+          currentPage++;
+        });
+      } else {
+        setState(() {
+          hasMoreData = false;
+        });
+      }
+    } catch (e) {
+      // Handle error
+    } finally {
+      setState(() {
+        isLoadingMore = false;
+      });
+    }
+  }
+
+  // Get next batch of documents (simulated pagination)
+  List<DocumentModel> _getNextBatch() {
+    // This is a simulation - in real app, you'd make an API call
+    // For now, we'll just return empty to show the pagination structure
+    return [];
   }
 
   Future<void> _loadInitialData() async {
@@ -56,32 +118,34 @@ class _AllDocumentsPageState extends State<AllDocumentsPage> {
     });
   }
 
-  Future<void> _loadDocuments() async {
+    Future<void> _loadDocuments() async {
       final response = await _documentController.getAllDocuments();
       if (response['statusCode'] == 200 && mounted) {
         setState(() {
           _documents = response['data'] ?? [];
+          totalItems = _documents.length;
+          hasMoreData = _documents.length >= itemsPerPage;
         });
     }
   }
 
   Future<void> _loadUsers() async {
-      final response = await _userController.getAllUsers();
-      if (response['statusCode'] == 200 && mounted) {
-        setState(() {
-          _users = (response['data'] as List)
-              .map((item) => UsersModel.fromJson(item))
-              .toList();
-        });
+    final response = await _userController.getAllUsers();
+    if (response['statusCode'] == 200 && mounted) {
+      setState(() {
+        _users = (response['data'] as List)
+            .map((item) => UsersModel.fromJson(item))
+            .toList();
+      });
     }
   }
 
   Future<void> _loadDocumentTypes() async {
-      final response = await _documentController.getAllDocumentTypes();
-      if (response['statusCode'] == 200 && mounted) {
-        setState(() {
-          _documentTypes = response['data'] ?? [];
-        });
+    final response = await _documentController.getAllDocumentTypes();
+    if (response['statusCode'] == 200 && mounted) {
+      setState(() {
+        _documentTypes = response['data'] ?? [];
+      });
     }
   }
 
@@ -292,19 +356,25 @@ class _AllDocumentsPageState extends State<AllDocumentsPage> {
                 // Filter row (collapsible)
                 if (_showFilters) _buildFilterRow(),
                 const Divider(height: 1),
-                            Expanded(
+                Expanded(
                   child: _filteredUsers.isEmpty
                       ? _buildEmptyState()
-                    : ListView.builder(
-                        itemCount: _filteredUsers.length,
-                        itemBuilder: (context, index) {
-                          final user = _filteredUsers[index];
-                          return _buildUserCard(user);
-                        },
-                      ),
-          ),
-        ],
-      ),
+                      : ListView.builder(
+                          controller: _scrollController,
+                          itemCount: _filteredUsers.length + (hasMoreData ? 1 : 0),
+                          itemBuilder: (context, index) {
+                            // Show loading indicator at the bottom
+                            if (index == _filteredUsers.length) {
+                              return _buildLoadingIndicator();
+                            }
+                            
+                            final user = _filteredUsers[index];
+                            return _buildUserCard(user);
+                          },
+                        ),
+                ),
+              ],
+            ),
     );
   }
 
@@ -356,8 +426,8 @@ class _AllDocumentsPageState extends State<AllDocumentsPage> {
                       value: user,
                       child: Text(
                         '${user.firstName ?? ''} ${user.lastName ?? ''} (${user.email ?? ''})',
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     )),
               ],
               onChanged: (value) {
@@ -378,8 +448,8 @@ class _AllDocumentsPageState extends State<AllDocumentsPage> {
                           EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                       hintText: 'Search users...',
                       border: OutlineInputBorder(),
-                          ),
-                        ),
+                    ),
+                  ),
                 ),
                 searchMatchFn: (item, searchValue) {
                   if (item.value == null) return true;
@@ -391,13 +461,13 @@ class _AllDocumentsPageState extends State<AllDocumentsPage> {
                   return fullName.contains(searchValue.toLowerCase()) ||
                       email.contains(searchValue.toLowerCase());
                 },
-                ),
+              ),
               dropdownStyleData: const DropdownStyleData(
                 maxHeight: 300,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.all(Radius.circular(8)),
-        ),
-      ),
+                ),
+              ),
               menuItemStyleData: const MenuItemStyleData(
                 padding: EdgeInsets.symmetric(horizontal: 16),
                 height: 40,
@@ -405,7 +475,7 @@ class _AllDocumentsPageState extends State<AllDocumentsPage> {
               onMenuStateChange: (isOpen) {
                 if (!isOpen) {
                   _userSearchController.clear();
-    }
+                }
               },
             ),
           ),
@@ -414,71 +484,71 @@ class _AllDocumentsPageState extends State<AllDocumentsPage> {
           SizedBox(
             height: 56,
             child: DropdownButtonFormField2<DocumentTypeModel?>(
-      isExpanded: true,
+              isExpanded: true,
               value: _selectedDocumentType,
               decoration: const InputDecoration(
-        labelText: 'Document Type',
+                labelText: 'Document Type',
                 border: OutlineInputBorder(),
                 isDense: true,
-        contentPadding:
+                contentPadding:
                     EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      ),
+              ),
               hint: const Text('All Types'),
-      items: [
-        const DropdownMenuItem<DocumentTypeModel?>(
-          value: null,
-          child: Text('All Types'),
-        ),
+              items: [
+                const DropdownMenuItem<DocumentTypeModel?>(
+                  value: null,
+                  child: Text('All Types'),
+                ),
                 ..._documentTypes
                     .map((type) => DropdownMenuItem<DocumentTypeModel>(
-            value: type,
-            child: Text(type.name ?? '-'),
+                          value: type,
+                          child: Text(type.name ?? '-'),
                         )),
-      ],
+              ],
               onChanged: (value) {
-        setState(() {
-          _selectedDocumentType = value;
-        });
-      },
-      dropdownSearchData: DropdownSearchData(
-        searchController: _documentTypeSearchController,
-        searchInnerWidgetHeight: 50,
-        searchInnerWidget: Padding(
-          padding: const EdgeInsets.all(8),
-          child: TextFormField(
-            controller: _documentTypeSearchController,
-            decoration: const InputDecoration(
-              isDense: true,
+                setState(() {
+                  _selectedDocumentType = value;
+                });
+              },
+              dropdownSearchData: DropdownSearchData(
+                searchController: _documentTypeSearchController,
+                searchInnerWidgetHeight: 50,
+                searchInnerWidget: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: TextFormField(
+                    controller: _documentTypeSearchController,
+                    decoration: const InputDecoration(
+                      isDense: true,
                       contentPadding:
                           EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              hintText: 'Search document types...',
+                      hintText: 'Search document types...',
                       border: OutlineInputBorder(),
-            ),
-          ),
-        ),
-        searchMatchFn: (item, searchValue) {
-          if (item.value == null) return true;
-          final type = item.value!;
-          return (type.name ?? '')
-              .toLowerCase()
-              .contains(searchValue.toLowerCase());
-        },
-      ),
-      dropdownStyleData: const DropdownStyleData(
-        maxHeight: 300,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.all(Radius.circular(8)),
-        ),
-      ),
-      menuItemStyleData: const MenuItemStyleData(
-        padding: EdgeInsets.symmetric(horizontal: 16),
-        height: 40,
-      ),
-      onMenuStateChange: (isOpen) {
-        if (!isOpen) {
-          _documentTypeSearchController.clear();
-        }
-      },
+                    ),
+                  ),
+                ),
+                searchMatchFn: (item, searchValue) {
+                  if (item.value == null) return true;
+                  final type = item.value!;
+                  return (type.name ?? '')
+                      .toLowerCase()
+                      .contains(searchValue.toLowerCase());
+                },
+              ),
+              dropdownStyleData: const DropdownStyleData(
+                maxHeight: 300,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.all(Radius.circular(8)),
+                ),
+              ),
+              menuItemStyleData: const MenuItemStyleData(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                height: 40,
+              ),
+              onMenuStateChange: (isOpen) {
+                if (!isOpen) {
+                  _documentTypeSearchController.clear();
+                }
+              },
             ),
           ),
           const SizedBox(height: 12),
@@ -493,8 +563,8 @@ class _AllDocumentsPageState extends State<AllDocumentsPage> {
                     const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8)),
-        ),
-      ),
+              ),
+            ),
           ),
         ],
       ),
@@ -513,7 +583,7 @@ class _AllDocumentsPageState extends State<AllDocumentsPage> {
       elevation: 4,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -629,7 +699,7 @@ class _AllDocumentsPageState extends State<AllDocumentsPage> {
                                   Icons.visibility,
                                   color: Colors.white,
                                   size: 18,
-      ),
+                                ),
                                 const SizedBox(width: 8),
                                 Text(
                                   'View Details',
@@ -644,7 +714,7 @@ class _AllDocumentsPageState extends State<AllDocumentsPage> {
                                   Icons.arrow_forward_ios,
                                   color: Colors.white,
                                   size: 14,
-      ),
+                                ),
                               ],
                             ),
                           ),
@@ -689,5 +759,43 @@ class _AllDocumentsPageState extends State<AllDocumentsPage> {
         ],
       ),
     );
+  }
+
+  // Build loading indicator for pagination
+  Widget _buildLoadingIndicator() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Center(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Loading more documents...',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _userSearchController.dispose();
+    _documentTypeSearchController.dispose();
+    super.dispose();
   }
 }

@@ -201,7 +201,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 15),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: GestureDetector(
                           onTap: () => _showActivityDetails(context,
@@ -215,7 +215,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 15),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: GestureDetector(
                           onTap: () => _showActivityDetails(
@@ -281,23 +281,23 @@ class _ProfilePageState extends State<ProfilePage> {
     IconData icon,
   ) {
     return Container(
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withOpacity(0.2), width: 1),
       ),
       child: Column(
         children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 8),
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 6),
           Text(
             value,
             style: Theme.of(
               context,
-            ).textTheme.displayMedium?.copyWith(color: color),
+            ).textTheme.headlineMedium?.copyWith(color: color),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           Text(
             label,
             textAlign: TextAlign.center,

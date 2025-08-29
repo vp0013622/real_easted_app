@@ -61,12 +61,100 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
   // Timer for checking missed meetings
   Timer? _missedMeetingTimer;
 
+  // Pagination variables
+  final ScrollController _scrollController = ScrollController();
+  bool isLoadingMore = false;
+  bool hasMoreData = true;
+  static const int itemsPerPage = 20;
+  int currentPage = 0;
+  int totalItems = 0;
+
   @override
   void initState() {
     super.initState();
-    _setupAnimations();
+
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.1),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+
+    // Add scroll listener for pagination
+    _scrollController.addListener(_onScroll);
+
+    _animationController.forward();
     _loadMyMeetings();
     _startMissedMeetingTimer();
+  }
+
+  // Scroll listener for pagination
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      if (!isLoadingMore && hasMoreData) {
+        _loadMoreData();
+      }
+    }
+  }
+
+  // Load more data for pagination
+  Future<void> _loadMoreData() async {
+    if (isLoadingMore || !hasMoreData) return;
+
+    setState(() {
+      isLoadingMore = true;
+    });
+
+    try {
+      // Simulate loading more data (in real app, this would be an API call)
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // Get next batch of meetings
+      final nextBatch = _getNextBatch();
+      if (nextBatch.isNotEmpty) {
+        setState(() {
+          _meetings.addAll(nextBatch);
+          _filteredMeetings = _applyFilters(_meetings);
+          currentPage++;
+        });
+      } else {
+        setState(() {
+          hasMoreData = false;
+        });
+      }
+    } catch (e) {
+      // Handle error
+    } finally {
+      setState(() {
+        isLoadingMore = false;
+      });
+    }
+  }
+
+  // Get next batch of meetings (simulated pagination)
+  List<MeetingSchedule> _getNextBatch() {
+    // This is a simulation - in real app, you'd make an API call
+    // For now, we'll just return empty to show the pagination structure
+    return [];
+  }
+
+  // Apply filters to the meetings list
+  List<MeetingSchedule> _applyFilters(List<MeetingSchedule> allMeetings) {
+    List<MeetingSchedule> filtered = List.from(allMeetings);
+
+    // Apply any existing filters here
+    // For now, just return all meetings
+    return filtered;
   }
 
   void _setupAnimations() {
@@ -93,9 +181,40 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
     );
   }
 
+  // Build loading indicator for pagination
+  Widget _buildLoadingIndicator() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Center(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Loading more meetings...',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _animationController.dispose();
+    _scrollController.dispose();
     _missedMeetingTimer?.cancel();
     super.dispose();
   }
@@ -310,11 +429,9 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
         meetings = allMeetings
             .where((meeting) => meeting.scheduledByUserId == currentUserId)
             .toList();
-
       } else {
         // For customer meetings, use the optimized getMyMeetings() method
         meetings = await _meetingService.getMyMeetings();
-
       }
 
       // Check and update missed meetings
@@ -324,6 +441,8 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
         _meetings = meetings;
         _filteredMeetings = List.from(meetings);
         _isLoading = false;
+        totalItems = meetings.length;
+        hasMoreData = meetings.length >= itemsPerPage;
       });
 
       // Load associated data and then apply current filter
@@ -374,11 +493,9 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
           _statusCache[status.id] = status;
         }
       }
-
-      
-      } catch (e) {
-        // Handle error silently
-      }
+    } catch (e) {
+      // Handle error silently
+    }
   }
 
   String _getUserName(String userId) {
@@ -699,9 +816,15 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
       animation: _animationController,
       builder: (context, child) {
         return ListView.builder(
+          controller: _scrollController,
           padding: const EdgeInsets.all(20),
-          itemCount: _filteredMeetings.length,
+          itemCount: _filteredMeetings.length + (hasMoreData ? 1 : 0),
           itemBuilder: (context, index) {
+            // Show loading indicator at the bottom
+            if (index == _filteredMeetings.length) {
+              return _buildLoadingIndicator();
+            }
+
             final meeting = _filteredMeetings[index];
             return FadeTransition(
               opacity: _fadeAnimation,

@@ -7,6 +7,7 @@ import 'package:inhabit_realties/models/auth/UsersModel.dart';
 import 'package:inhabit_realties/pages/widgets/listTile.dart';
 import 'package:inhabit_realties/pages/widgets/loader.dart';
 import 'package:inhabit_realties/controllers/file/userProfilePictureController.dart';
+import 'package:inhabit_realties/controllers/role/roleController.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AppDrawer extends StatefulWidget {
@@ -182,34 +183,56 @@ class _AppDrawerState extends State<AppDrawer> {
               ),
             ),
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: DrawerMenuList.list.length,
-              itemBuilder: (context, index) {
-                final item = DrawerMenuList.list[index];
-                final isLogout = item['path'] == '/auth/logout';
+            child: FutureBuilder(
+              future: _loadUserRole(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-                return Column(
-                  children: [
-                    DrawerListTile(
-                      path: item['path'],
-                      icon: item['icon'],
-                      title: item['title'],
-                    ),
-                    if (isLogout || index == DrawerMenuList.list.length - 1)
-                      const SizedBox(height: 8)
-                    else if (index == 6) // Add divider after Meetings
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
+                final userRole = snapshot.data as String?;
+                print('DEBUG: User role loaded: $userRole'); // Debug log
+                final filteredMenuItems = _getFilteredMenuItems(userRole);
+                print(
+                    'DEBUG: Total menu items: ${DrawerMenuList.list.length}'); // Debug log
+                print(
+                    'DEBUG: Filtered menu items: ${filteredMenuItems.length}'); // Debug log
+                print('DEBUG: Menu items:'); // Debug log
+                for (final item in filteredMenuItems) {
+                  print(
+                      'DEBUG: - ${item['title']} (${item['path']})'); // Debug log
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  itemCount: filteredMenuItems.length,
+                  itemBuilder: (context, index) {
+                    final item = filteredMenuItems[index];
+                    final isLogout = item['path'] == '/auth/logout';
+
+                    return Column(
+                      children: [
+                        DrawerListTile(
+                          path: item['path'],
+                          icon: item['icon'],
+                          title: item['title'],
                         ),
-                        child: Divider(
-                          color: textColor.withOpacity(0.1),
-                          height: 1,
-                        ),
-                      ),
-                  ],
+                        if (isLogout || index == filteredMenuItems.length - 1)
+                          const SizedBox(height: 8)
+                        else if (index == 6) // Add divider after Meetings
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            child: Divider(
+                              color: textColor.withOpacity(0.1),
+                              height: 1,
+                            ),
+                          ),
+                      ],
+                    );
+                  },
                 );
               },
             ),
@@ -226,5 +249,66 @@ class _AppDrawerState extends State<AppDrawer> {
         ],
       ),
     );
+  }
+
+  Future<String?> _loadUserRole() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final currentUser = prefs.getString('currentUser') ?? '';
+
+      if (currentUser.isNotEmpty) {
+        final userData = jsonDecode(currentUser);
+        final roleId = userData['role'] ?? '';
+
+        if (roleId.isNotEmpty) {
+          // Fetch role name using role ID
+          try {
+            final roleController = RoleController();
+            final roleData = await roleController.getRoleById(roleId);
+
+            if (roleData['statusCode'] == 200 && roleData['data'] != null) {
+              return roleData['data']['name'] ?? '';
+            }
+          } catch (e) {
+            // If role fetching fails, return null
+            return null;
+          }
+        }
+      }
+    } catch (e) {
+      // Handle error silently
+    }
+    return null;
+  }
+
+  List<Map<String, dynamic>> _getFilteredMenuItems(String? userRole) {
+    if (userRole == null) {
+      return DrawerMenuList.list;
+    }
+
+    final isAdmin = userRole.toLowerCase() == 'admin';
+    final isExecutive = userRole.toLowerCase() == 'executive';
+
+    return DrawerMenuList.list.where((item) {
+      final path = item['path'] as String;
+
+      // Admin-only routes
+      if (path == '/users' || path == '/auth/register') {
+        return isAdmin;
+      }
+
+      // Admin and Executive routes
+      if (path == '/all_purchase_bookings' || path == '/all_rental_bookings') {
+        return isAdmin || isExecutive;
+      }
+
+      // Routes accessible to all authenticated users
+      if (path == '/settings' || path == '/auth/logout') {
+        return true;
+      }
+
+      // Default: show all items
+      return true;
+    }).toList();
   }
 }

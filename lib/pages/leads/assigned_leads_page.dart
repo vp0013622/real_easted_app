@@ -46,6 +46,16 @@ class _AssignedLeadsPageState extends State<AssignedLeadsPage> {
 
     try {
       final leads = await _userController.getAssignedLeadsNew();
+
+      // Sort leads by createdAt date (latest first)
+      leads.sort((a, b) {
+        if (a.createdAt == null && b.createdAt == null) return 0;
+        if (a.createdAt == null) return 1;
+        if (b.createdAt == null) return -1;
+        return b.createdAt!
+            .compareTo(a.createdAt!); // Descending order (newest first)
+      });
+
       setState(() {
         _assignedLeads = leads;
         _filteredLeads = leads;
@@ -75,6 +85,15 @@ class _AssignedLeadsPageState extends State<AssignedLeadsPage> {
 
         return matchesSearch && matchesStatus;
       }).toList();
+
+      // Maintain sorting by createdAt date (latest first) after filtering
+      _filteredLeads.sort((a, b) {
+        if (a.createdAt == null && b.createdAt == null) return 0;
+        if (a.createdAt == null) return 1;
+        if (b.createdAt == null) return -1;
+        return b.createdAt!
+            .compareTo(a.createdAt!); // Descending order (newest first)
+      });
     });
   }
 

@@ -344,4 +344,37 @@ class NotificationService {
       };
     }
   }
+
+  // Get meeting details for notification
+  static Future<Map<String, dynamic>> getMeetingDetailsForNotification(String meetingId) async {
+    try {
+      final token = await _getAuthToken();
+      if (token == null) {
+        return {
+          'statusCode': 401,
+          'message': 'Authentication required',
+        };
+      }
+
+      final response = await http.get(
+        Uri.parse('${ApiUrls.getMeetingById}$meetingId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      final responseData = jsonDecode(response.body);
+      return {
+        'statusCode': response.statusCode,
+        'message': responseData['message'] ?? 'No message',
+        'data': responseData['data'],
+      };
+    } catch (e) {
+      return {
+        'statusCode': 500,
+        'message': 'Error getting meeting details: $e',
+      };
+    }
+  }
 }

@@ -62,15 +62,11 @@ class NotificationController extends ChangeNotifier {
       if (result['statusCode'] == 200) {
         final List<dynamic> notificationsData = result['data'] ?? [];
 
-
         final List<NotificationModel> newNotifications = notificationsData
             .map((json) => NotificationModel.fromJson(json))
             .toList();
 
-
-        for (int i = 0; i < newNotifications.length; i++) {
-
-        }
+        for (int i = 0; i < newNotifications.length; i++) {}
 
         if (refresh) {
           _notifications = newNotifications;
@@ -236,7 +232,6 @@ class NotificationController extends ChangeNotifier {
       final result = await NotificationService.createMeetingReminders();
 
       if (result['statusCode'] == 200) {
-  
         // Optionally refresh notifications after creating reminders
         await getNotifications(refresh: true);
       } else {
@@ -318,5 +313,24 @@ class NotificationController extends ChangeNotifier {
   // Get read notifications
   List<NotificationModel> get readNotifications {
     return _notifications.where((n) => n.isRead).toList();
+  }
+
+  // Handle meeting notification tap
+  Future<Map<String, dynamic>?> handleMeetingNotificationTap(
+      String meetingId) async {
+    try {
+      final result =
+          await NotificationService.getMeetingDetailsForNotification(meetingId);
+
+      if (result['statusCode'] == 200) {
+        return result;
+      } else {
+        _setError(result['message'] ?? 'Failed to get meeting details');
+        return null;
+      }
+    } catch (e) {
+      _setError('Error getting meeting details: $e');
+      return null;
+    }
   }
 }

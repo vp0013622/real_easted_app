@@ -7,6 +7,7 @@ import 'package:flutter/cupertino.dart';
 import '../widgets/formTextField.dart';
 import '../widgets/appSnackBar.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
+import '../../models/meeting_schedule_model.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({Key? key}) : super(key: key);
@@ -22,6 +23,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
   String _selectedStatus = 'Unread'; // Default to show unread first
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
+  bool _isLoadingMeeting = false; // Add loading state for meeting details
 
   final List<String> _notificationTypes = [
     'All',
@@ -463,7 +465,18 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     shape: BoxShape.circle,
                   ),
                 )
-              : null,
+              : (notification.type == 'meeting_schedule' ||
+                          notification.type == 'meeting_reminder') &&
+                      _isLoadingMeeting
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                      ),
+                    )
+                  : null,
           onTap: () => _handleNotificationTap(notification, controller),
           onLongPress: () =>
               _showNotificationOptions(context, notification, controller),
@@ -745,13 +758,101 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   void _handleNotificationTap(
-      NotificationModel notification, NotificationController controller) {
+      NotificationModel notification, NotificationController controller) async {
     // Handle navigation based on notification type
     switch (notification.type) {
       case 'meeting_schedule':
       case 'meeting_reminder':
         // Navigate to meeting details
-        // Navigator.pushNamed(context, '/meeting-details', arguments: notification.relatedId);
+        if (notification.relatedId != null) {
+          try {
+            setState(() {
+              _isLoadingMeeting = true;
+            });
+
+            // Mark notification as read
+            await controller.markAsRead(notification.id);
+
+            // Get meeting details
+            final meetingResult = await controller
+                .handleMeetingNotificationTap(notification.relatedId!);
+
+            if (meetingResult != null && meetingResult['data'] != null) {
+              try {
+                // Convert the Map data to MeetingSchedule object
+                final meetingData =
+                    meetingResult['data'] as Map<String, dynamic>;
+
+                // Validate that we have the required fields
+                if (meetingData['_id'] == null ||
+                    meetingData['title'] == null) {
+                  throw Exception('Missing required meeting fields');
+                }
+
+                // Ensure all required fields have fallback values
+                final safeMeetingData = {
+                  '_id': meetingData['_id'] ?? '',
+                  'title': meetingData['title'] ?? '',
+                  'description': meetingData['description'] ?? '',
+                  'meetingDate': meetingData['meetingDate'] ?? '',
+                  'startTime': meetingData['startTime'] ?? '',
+                  'endTime': meetingData['endTime'],
+                  'duration': meetingData['duration'],
+                  'status': meetingData['status'] ?? '',
+                  'scheduledByUserId': meetingData['scheduledByUserId'] ?? '',
+                  'customerId': meetingData['customerId'] ?? '',
+                  'propertyId': meetingData['propertyId'],
+                  'notes': meetingData['notes'] ?? '',
+                  'createdByUserId': meetingData['createdByUserId'] ?? '',
+                  'updatedByUserId': meetingData['updatedByUserId'] ?? '',
+                  'published': meetingData['published'] ?? true,
+                  'createdAt': meetingData['createdAt'],
+                  'updatedAt': meetingData['updatedAt'],
+                };
+
+                final meeting = MeetingSchedule.fromJson(safeMeetingData);
+
+                // Navigate to meeting details page
+                Navigator.pushNamed(
+                  context,
+                  '/meeting_details',
+                  arguments: {'meeting': meeting},
+                );
+              } catch (e) {
+                // Show error message if conversion fails
+                AppSnackBar.showSnackBar(
+                  context,
+                  'Error',
+                  'Invalid meeting data format: ${e.toString()}',
+                  ContentType.failure,
+                );
+
+                // Log the actual data structure for debugging
+                print('Meeting data structure: ${meetingResult['data']}');
+                print('Error: $e');
+              }
+            } else {
+              // Show error message
+              AppSnackBar.showSnackBar(
+                context,
+                'Error',
+                'Failed to load meeting details',
+                ContentType.failure,
+              );
+            }
+          } catch (e) {
+            AppSnackBar.showSnackBar(
+              context,
+              'Error',
+              'Error loading meeting details: $e',
+              ContentType.failure,
+            );
+          } finally {
+            setState(() {
+              _isLoadingMeeting = false;
+            });
+          }
+        }
         break;
       case 'lead_assignment':
         // Navigate to lead details
