@@ -1,6 +1,5 @@
 // ignore_for_file: prefer_final_fields
 
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
@@ -226,27 +225,25 @@ class _EditUserPageState extends State<EditUserPage> {
                 ),
               ),
               value: selectedRoleId,
-              items:
-                  roles.map((role) {
-                    return DropdownMenuItem<String>(
-                      value: role.id,
-                      child: Text(
-                        role.name,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    );
-                  }).toList(),
-              onChanged:
-                  isLoading
-                      ? null
-                      : (value) {
-                        if (value != null) {
-                          setState(() {
-                            selectedRoleId = value;
-                            _roleId.text = value;
-                          });
-                        }
-                      },
+              items: roles.map((role) {
+                return DropdownMenuItem<String>(
+                  value: role.id,
+                  child: Text(
+                    role.name,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                );
+              }).toList(),
+              onChanged: isLoading
+                  ? null
+                  : (value) {
+                      if (value != null) {
+                        setState(() {
+                          selectedRoleId = value;
+                          _roleId.text = value;
+                        });
+                      }
+                    },
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return RegisterPageProvider.roleValidationMessage;
@@ -375,16 +372,15 @@ class _EditUserPageState extends State<EditUserPage> {
                   ),
                 ),
               ],
-              onChanged:
-                  isLoading
-                      ? null
-                      : (value) {
-                        if (value != null) {
-                          setState(() {
-                            selectedPublishedOrNot = value;
-                          });
-                        }
-                      },
+              onChanged: isLoading
+                  ? null
+                  : (value) {
+                      if (value != null) {
+                        setState(() {
+                          selectedPublishedOrNot = value;
+                        });
+                      }
+                    },
               validator: (value) {
                 if (value == null) {
                   return 'Status is required';
@@ -399,6 +395,12 @@ class _EditUserPageState extends State<EditUserPage> {
   }
 
   Widget _buildSubmitButton() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final buttonColor =
+        isDark ? AppColors.brandPrimary : AppColors.brandPrimary;
+    final textColor =
+        isDark ? AppColors.darkWhiteText : AppColors.lightCardBackground;
+
     return Container(
       height: 50,
       width: double.infinity,
@@ -406,30 +408,32 @@ class _EditUserPageState extends State<EditUserPage> {
       child: ElevatedButton(
         onPressed: isLoading ? null : _handleSubmit,
         style: ElevatedButton.styleFrom(
+          backgroundColor: buttonColor,
+          foregroundColor: textColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
           elevation: 2,
         ),
-        child:
-            isLoading
-                ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      AppColors.darkWhiteText,
-                    ),
-                  ),
-                )
-                : Text(
-                  RegisterPageProvider.saveChanges,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+        child: isLoading
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    AppColors.darkWhiteText,
                   ),
                 ),
+              )
+            : Text(
+                RegisterPageProvider.saveChanges,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: textColor,
+                ),
+              ),
       ),
     );
   }

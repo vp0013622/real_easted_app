@@ -139,12 +139,10 @@ class _EditMeetingPageState extends State<EditMeetingPage> {
   }
 
   Future<void> _updateMeeting() async {
-
     if (!_formKey.currentState!.validate()) {
-              return;
-      }
+      return;
+    }
     if (_selectedDate == null || _selectedStartTime == null) {
-
       AppSnackBar.showSnackBar(
         context,
         'Error',
@@ -176,11 +174,8 @@ class _EditMeetingPageState extends State<EditMeetingPage> {
         'notes': _notesController.text,
       };
 
-
-
       final result =
           await _meetingService.updateMeeting(widget.meeting.id, meetingData);
-
 
       if (mounted) {
         AppSnackBar.showSnackBar(
@@ -192,7 +187,6 @@ class _EditMeetingPageState extends State<EditMeetingPage> {
         Navigator.pop(context, true);
       }
     } catch (e) {
-
       if (mounted) {
         AppSnackBar.showSnackBar(
           context,
@@ -321,6 +315,7 @@ class _EditMeetingPageState extends State<EditMeetingPage> {
               ),
               keyboardType: TextInputType.multiline,
               maxLines: 3,
+              enableInteractiveSelection: true,
             ),
           ),
         ],

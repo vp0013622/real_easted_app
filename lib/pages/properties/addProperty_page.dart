@@ -54,6 +54,7 @@ class _AddPropertyPageState extends State<AddPropertyPage> {
   late final TextEditingController _bathRooms;
   late final TextEditingController _areaInSquarFoot;
   late final TextEditingController _amenities;
+  List<String> selectedAmenities = [];
   late final TextEditingController _listedDate;
   late final TextEditingController _countrySearchController;
   late final TextEditingController _stateSearchController;
@@ -101,6 +102,126 @@ class _AddPropertyPageState extends State<AddPropertyPage> {
   List<Country> countries = [];
   List<country_state_selector.State> states = [];
   List<City> cities = [];
+
+  // Comprehensive amenities list
+  static const List<String> allAmenities = [
+    // Basic Amenities
+    'Air Conditioning',
+    'Heating',
+    'Central Air',
+    'Ceiling Fans',
+    'Furnished',
+    'Unfurnished',
+    'Pet Friendly',
+    'No Pets Allowed',
+
+    // Kitchen & Appliances
+    'Dishwasher',
+    'Microwave',
+    'Refrigerator',
+    'Oven',
+    'Stove',
+    'Garbage Disposal',
+    'Kitchen Island',
+    'Pantry',
+    'Breakfast Bar',
+
+    // Laundry
+    'Washing Machine',
+    'Dryer',
+    'In-Unit Laundry',
+    'Laundry Room',
+    'Hookups',
+
+    // Storage
+    'Walk-in Closet',
+    'Built-in Storage',
+    'Storage Unit',
+    'Attic',
+    'Basement',
+    'Garage',
+    'Carport',
+    'Bike Storage',
+
+    // Flooring
+    'Hardwood Floors',
+    'Carpet',
+    'Tile Floors',
+    'Vinyl Floors',
+    'Laminate Floors',
+
+    // Special Features
+    'Fireplace',
+    'Balcony',
+    'Patio',
+    'Deck',
+    'Garden',
+    'Yard',
+    'Pool',
+    'Hot Tub',
+    'Sauna',
+
+    // Security & Access
+    'Security System',
+    'Doorman',
+    'Concierge',
+    'Elevator',
+    'Stairs',
+    'Gated Community',
+    'Guest Parking',
+    'Package Receiving',
+
+    // Entertainment
+    'Cable TV',
+    'Internet/WiFi',
+    'Home Theater',
+    'Game Room',
+    'Wine Cellar',
+
+    // Outdoor & Recreation
+    'BBQ Area',
+    'Playground',
+    'Tennis Court',
+    'Basketball Court',
+    'Gym',
+    'Fitness Center',
+    'Spa',
+    'Golf Course Access',
+
+    // Transportation
+    'Public Transit Nearby',
+    'Highway Access',
+    'Airport Nearby',
+    'Train Station Nearby',
+
+    // Business & Work
+    'Home Office',
+    'Conference Room',
+    'Business Center',
+    'Coworking Space',
+
+    // Accessibility
+    'Wheelchair Accessible',
+    'Elevator Access',
+    'Ground Floor',
+    'Ramp Access',
+
+    // Energy & Utilities
+    'Solar Panels',
+    'Energy Efficient',
+    'Smart Home Features',
+    'Programmable Thermostat',
+
+    // Views & Location
+    'Mountain View',
+    'Ocean View',
+    'City View',
+    'Garden View',
+    'Waterfront',
+    'Near Shopping',
+    'Near Schools',
+    'Near Parks',
+  ];
 
   @override
   void initState() {
@@ -822,12 +943,7 @@ class _AddPropertyPageState extends State<AddPropertyPage> {
               return null;
             },
           ),
-          FormTextField(
-            textEditingController: _amenities,
-            labelText: PropertyPageProvider.amenities,
-            prefixIcon: CupertinoIcons.line_horizontal_3,
-            keyboardType: TextInputType.text,
-          ),
+          _buildAmenitiesSelector(),
         ],
       ),
     );
@@ -993,11 +1109,8 @@ class _AddPropertyPageState extends State<AddPropertyPage> {
             ? 0.0
             : double.parse(_areaInSquarFoot.text.trim());
 
-        final amenities = <String>[];
-        final splitedAmenities = _amenities.text.split(',');
-        for (var amenity in splitedAmenities) {
-          amenities.add(await InitalAssigner.generateInitial(amenity.trim()));
-        }
+        final amenities =
+            selectedAmenities.isNotEmpty ? selectedAmenities : <String>[];
 
         final listedDate = DateTime.parse(_listedDate.text);
 
@@ -1056,5 +1169,198 @@ class _AddPropertyPageState extends State<AddPropertyPage> {
         setState(() => isPageLoading = false);
       }
     }
+  }
+
+  /// Builds the amenities multi-select widget
+  Widget _buildAmenitiesSelector() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor =
+        isDark ? AppColors.darkWhiteText : AppColors.lightDarkText;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          PropertyPageProvider.amenities,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: textColor,
+              ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+            ),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            children: [
+              // Selected amenities display
+              if (selectedAmenities.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: selectedAmenities.map((amenity) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.brandPrimary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: AppColors.brandPrimary,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              amenity,
+                              style: TextStyle(
+                                color: AppColors.brandPrimary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  selectedAmenities.remove(amenity);
+                                });
+                              },
+                              child: Icon(
+                                Icons.close,
+                                size: 16,
+                                color: AppColors.brandPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+
+              // Add amenities button
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      selectedAmenities.isEmpty
+                          ? 'No amenities selected'
+                          : '${selectedAmenities.length} amenities selected',
+                      style: TextStyle(
+                        color: textColor.withOpacity(0.7),
+                        fontSize: 12,
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: () => _showAmenitiesDialog(),
+                      icon: const Icon(Icons.edit, size: 16),
+                      label: Text(
+                        selectedAmenities.isEmpty ? 'Select' : 'Edit',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        minimumSize: const Size(0, 32),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Shows the amenities selection dialog
+  void _showAmenitiesDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Select Amenities'),
+              content: SizedBox(
+                width: double.maxFinite,
+                height: 500,
+                child: Column(
+                  children: [
+                    // Search field
+                    TextField(
+                      decoration: const InputDecoration(
+                        hintText: 'Search amenities...',
+                        prefixIcon: Icon(Icons.search),
+                        border: OutlineInputBorder(),
+                      ),
+                      onChanged: (value) {
+                        // Filter amenities based on search
+                        setDialogState(() {});
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    // Amenities list
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: allAmenities.length,
+                        itemBuilder: (context, index) {
+                          final amenity = allAmenities[index];
+                          final isSelected =
+                              selectedAmenities.contains(amenity);
+
+                          return CheckboxListTile(
+                            title: Text(amenity),
+                            value: isSelected,
+                            onChanged: (bool? value) {
+                              setDialogState(() {
+                                if (value == true) {
+                                  if (!selectedAmenities.contains(amenity)) {
+                                    selectedAmenities.add(amenity);
+                                  }
+                                } else {
+                                  selectedAmenities.remove(amenity);
+                                }
+                              });
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {});
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Done'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 }

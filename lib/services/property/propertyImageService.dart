@@ -152,7 +152,7 @@ class PropertyImageService {
   ) async {
     Map<String, dynamic> result = {};
     try {
-      final url = '${ApiUrls.deletePropertyImage}$propertyId';
+      final url = '${ApiUrls.deletePropertyImageById}$imageId';
 
       final response = await http.delete(
         Uri.parse(url),
@@ -239,7 +239,7 @@ class PropertyImageService {
   ) async {
     Map<String, dynamic> result = {};
     try {
-      final url = '${ApiUrls.getPropertyImageById}$imageId';
+      final url = '${ApiUrls.deletePropertyImageById}$imageId';
 
       final response = await http.delete(
         Uri.parse(url),

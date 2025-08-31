@@ -329,6 +329,12 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Widget _buildSubmitButton() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final buttonColor =
+        isDark ? AppColors.brandPrimary : AppColors.brandPrimary;
+    final textColor =
+        isDark ? AppColors.darkWhiteText : AppColors.lightCardBackground;
+
     return Container(
       height: 50,
       width: double.infinity,
@@ -336,6 +342,8 @@ class _RegisterPageState extends State<RegisterPage> {
       child: ElevatedButton(
         onPressed: isLoading ? null : _handleSubmit,
         style: ElevatedButton.styleFrom(
+          backgroundColor: buttonColor,
+          foregroundColor: textColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
@@ -354,9 +362,10 @@ class _RegisterPageState extends State<RegisterPage> {
               )
             : Text(
                 RegisterPageProvider.registerButton,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
+                  color: textColor,
                 ),
               ),
       ),

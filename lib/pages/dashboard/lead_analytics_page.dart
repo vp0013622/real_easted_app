@@ -237,9 +237,9 @@ class _LeadAnalyticsPageState extends State<LeadAnalyticsPage> {
             _buildConversionRateCard(),
             const SizedBox(height: 24),
             _buildStatusDistributionChart(),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32), // Increased spacing
             _buildDesignationDistributionChart(),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32), // Increased spacing
             _buildFollowUpDistributionChart(),
             const SizedBox(height: 24),
             _buildRecentLeadsList(),
@@ -540,7 +540,7 @@ class _LeadAnalyticsPageState extends State<LeadAnalyticsPage> {
           ),
           const SizedBox(height: 20),
           SizedBox(
-            height: 200,
+            height: 280, // Increased height to accommodate labels
             child: BarChart(
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
@@ -559,14 +559,28 @@ class _LeadAnalyticsPageState extends State<LeadAnalyticsPage> {
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
+                      reservedSize: 80, // Increased reserved space for labels
                       getTitlesWidget: (value, meta) {
                         final labels = statusData.keys.toList();
                         if (value.toInt() < labels.length) {
+                          final label = labels[value.toInt()];
                           return Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Text(
-                              labels[value.toInt()],
-                              style: const TextStyle(fontSize: 10),
+                            padding: const EdgeInsets.only(top: 12),
+                            child: Transform.rotate(
+                              angle: -0.5, // Slight rotation to prevent overlap
+                              child: SizedBox(
+                                width: 80, // Fixed width for consistent spacing
+                                child: Text(
+                                  _getChartLabel(label),
+                                  style: const TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
                             ),
                           );
                         }
@@ -597,7 +611,7 @@ class _LeadAnalyticsPageState extends State<LeadAnalyticsPage> {
                           BarChartRodData(
                             toY: entry.value.toDouble(),
                             color: _getStatusColor(entry.key),
-                            width: 20,
+                            width: 16, // Reduced bar width for better spacing
                             borderRadius: const BorderRadius.only(
                               topLeft: Radius.circular(4),
                               topRight: Radius.circular(4),
@@ -743,7 +757,7 @@ class _LeadAnalyticsPageState extends State<LeadAnalyticsPage> {
           ),
           const SizedBox(height: 20),
           SizedBox(
-            height: 200,
+            height: 280, // Increased height to accommodate labels
             child: BarChart(
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
@@ -762,14 +776,28 @@ class _LeadAnalyticsPageState extends State<LeadAnalyticsPage> {
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
+                      reservedSize: 80, // Increased reserved space for labels
                       getTitlesWidget: (value, meta) {
                         final labels = followUpData.keys.toList();
                         if (value.toInt() < labels.length) {
+                          final label = labels[value.toInt()];
                           return Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Text(
-                              labels[value.toInt()],
-                              style: const TextStyle(fontSize: 10),
+                            padding: const EdgeInsets.only(top: 12),
+                            child: Transform.rotate(
+                              angle: -0.5, // Slight rotation to prevent overlap
+                              child: SizedBox(
+                                width: 80, // Fixed width for consistent spacing
+                                child: Text(
+                                  _getChartLabel(label),
+                                  style: const TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
                             ),
                           );
                         }
@@ -801,7 +829,7 @@ class _LeadAnalyticsPageState extends State<LeadAnalyticsPage> {
                           BarChartRodData(
                             toY: entry.value.toDouble(),
                             color: _getFollowUpStatusColor(entry.key),
-                            width: 20,
+                            width: 16, // Reduced bar width for better spacing
                             borderRadius: const BorderRadius.only(
                               topLeft: Radius.circular(4),
                               topRight: Radius.circular(4),
@@ -1139,5 +1167,29 @@ class _LeadAnalyticsPageState extends State<LeadAnalyticsPage> {
       followUpCounts[followUp] = (followUpCounts[followUp] ?? 0) + 1;
     }
     return followUpCounts;
+  }
+
+  /// Truncates long labels to prevent overlap in charts
+  String _truncateLabel(String label, {int maxLength = 15}) {
+    if (label.length <= maxLength) return label;
+    return '${label.substring(0, maxLength)}...';
+  }
+
+  /// Creates shorter, more readable labels for chart display
+  String _getChartLabel(String label) {
+    // Handle common long status names
+    final shortLabels = {
+      'NEW LEAD': 'NEW',
+      'ACTIVE URGENT WARNING': 'URGENT',
+      'HIGH BUDGET': 'HIGH BUDGET',
+      'UNKNOWN BUDGET': 'UNKNOWN',
+      'COMPLETED': 'COMPLETED',
+      'FOLLOW UP REQUIRED': 'FOLLOW UP',
+      'NO ACTION REQUIRED': 'NO ACTION',
+      'CALL BACK REQUIRED': 'CALL BACK',
+    };
+
+    final upperLabel = label.toUpperCase();
+    return shortLabels[upperLabel] ?? _truncateLabel(label, maxLength: 12);
   }
 }

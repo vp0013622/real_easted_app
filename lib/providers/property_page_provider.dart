@@ -23,7 +23,7 @@ class PropertyPageProvider {
   static String bedRooms = "Bedroom Count";
   static String bathRooms = "BathRoom Count";
   static String areaInSquarFoot = "Area (sf)";
-  static String amenities = "Amenities (enter ',' seperated)";
+  static String amenities = "Amenities";
   static String listedDate = "Listed Date";
 
 
