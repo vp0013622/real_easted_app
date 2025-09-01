@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:inhabit_realties/constants/contants.dart';
+import 'package:inhabit_realties/constants/status_utils.dart';
 import 'package:inhabit_realties/controllers/user/userController.dart';
 import 'package:inhabit_realties/models/lead/LeadsModel.dart';
+import 'package:inhabit_realties/models/lead/LeadStatusModel.dart';
+import 'package:inhabit_realties/models/lead/FollowUpStatusModel.dart';
 import 'package:inhabit_realties/pages/leads/lead_details_page.dart';
 import 'package:inhabit_realties/pages/widgets/appSpinner.dart';
 import 'package:inhabit_realties/pages/widgets/profile_avatar.dart';
 import 'package:inhabit_realties/widgets/notification_badge.dart';
 import 'package:provider/provider.dart';
 import 'package:inhabit_realties/controllers/notification/notificationController.dart';
+import 'package:inhabit_realties/services/lead/leadsService.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class AssignedLeadsPage extends StatefulWidget {
   const AssignedLeadsPage({super.key});
@@ -19,24 +25,78 @@ class AssignedLeadsPage extends StatefulWidget {
 
 class _AssignedLeadsPageState extends State<AssignedLeadsPage> {
   final UserController _userController = UserController();
+  final LeadsService _leadsService = LeadsService();
   List<LeadsModel> _assignedLeads = [];
   List<LeadsModel> _filteredLeads = [];
   bool _isLoading = true;
   String _searchQuery = '';
   String _statusFilter = 'All';
 
-  final List<String> _statusOptions = [
-    'All',
-    'Active',
-    'Pending',
-    'Completed',
-    'Closed',
-  ];
+  // Status data
+  List<LeadStatusModel> _leadStatuses = [];
+  List<FollowUpStatusModel> _followUpStatuses = [];
+
+  List<String> get _statusOptions {
+    return ['All', ..._leadStatuses.map((status) => status.name).toList()];
+  }
 
   @override
   void initState() {
     super.initState();
-    _loadAssignedLeads();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    await _loadLeadStatuses();
+    await _loadFollowUpStatuses();
+    await _loadAssignedLeads();
+  }
+
+  Future<void> _loadLeadStatuses() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+      final currentUser = prefs.getString('currentUser') ?? '';
+      final decodedCurrentUser = jsonDecode(currentUser);
+      final userId = decodedCurrentUser['_id'] ?? '';
+
+      final response = await _leadsService.getAllLeadStatuses(token, userId);
+      if (response['statusCode'] == 200 && mounted) {
+        setState(() {
+          _leadStatuses = (response['data'] as List)
+              .map((item) => LeadStatusModel.fromJson(item))
+              .toList();
+        });
+        // Update StatusUtils with the loaded statuses
+        StatusUtils.setLeadStatuses(_leadStatuses);
+      }
+    } catch (e) {
+      // Handle error silently
+    }
+  }
+
+  Future<void> _loadFollowUpStatuses() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+      final currentUser = prefs.getString('currentUser') ?? '';
+      final decodedCurrentUser = jsonDecode(currentUser);
+      final userId = decodedCurrentUser['_id'] ?? '';
+
+      final response =
+          await _leadsService.getAllFollowUpStatuses(token, userId);
+      if (response['statusCode'] == 200 && mounted) {
+        setState(() {
+          _followUpStatuses = (response['data'] as List)
+              .map((item) => FollowUpStatusModel.fromJson(item))
+              .toList();
+        });
+        // Update StatusUtils with the loaded statuses
+        StatusUtils.setFollowUpStatuses(_followUpStatuses);
+      }
+    } catch (e) {
+      // Handle error silently
+    }
   }
 
   Future<void> _loadAssignedLeads() async {
@@ -81,7 +141,8 @@ class _AssignedLeadsPageState extends State<AssignedLeadsPage> {
 
         // Status filter
         final matchesStatus = _statusFilter == 'All' ||
-            lead.leadStatus?.toLowerCase() == _statusFilter.toLowerCase();
+            StatusUtils.getLeadStatusDisplayName(lead.leadStatus ?? '') ==
+                _statusFilter;
 
         return matchesSearch && matchesStatus;
       }).toList();
@@ -98,17 +159,29 @@ class _AssignedLeadsPageState extends State<AssignedLeadsPage> {
   }
 
   Color _getStatusColor(String? status) {
-    switch (status?.toLowerCase()) {
-      case 'active':
-        return Colors.green;
-      case 'pending':
-        return Colors.orange;
-      case 'completed':
-        return Colors.blue;
-      case 'closed':
-        return Colors.grey;
+    return StatusUtils.getLeadStatusColor(status ?? '');
+  }
+
+  String _getDesignationDisplayName(String designation) {
+    // Handle common designations
+    switch (designation.toUpperCase()) {
+      case 'BUYER':
+        return 'Buyer';
+      case 'SELLER':
+        return 'Seller';
+      case 'INVESTOR':
+        return 'Investor';
+      case 'TENANT':
+        return 'Tenant';
+      case 'LANDLORD':
+        return 'Landlord';
       default:
-        return Colors.grey;
+        // If it's an ObjectId or unknown, return a default
+        if (designation.length == 24 &&
+            RegExp(r'^[a-fA-F0-9]+$').hasMatch(designation)) {
+          return 'Unknown';
+        }
+        return designation.isNotEmpty ? designation : 'Unknown';
     }
   }
 
@@ -145,7 +218,7 @@ class _AssignedLeadsPageState extends State<AssignedLeadsPage> {
               Icons.refresh,
               color: isDark ? AppColors.darkWhiteText : AppColors.lightDarkText,
             ),
-            onPressed: _loadAssignedLeads,
+            onPressed: _loadData,
           ),
         ],
       ),
@@ -394,7 +467,7 @@ class _AssignedLeadsPageState extends State<AssignedLeadsPage> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    lead.leadStatus ?? 'Unknown',
+                    StatusUtils.getLeadStatusDisplayName(lead.leadStatus ?? ''),
                     style: TextStyle(
                       color: _getStatusColor(lead.leadStatus),
                       fontSize: 10,
@@ -411,7 +484,7 @@ class _AssignedLeadsPageState extends State<AssignedLeadsPage> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    lead.leadDesignation,
+                    _getDesignationDisplayName(lead.leadDesignation),
                     style: TextStyle(
                       color: AppColors.brandPrimary,
                       fontSize: 10,

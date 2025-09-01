@@ -18,6 +18,7 @@ import 'package:inhabit_realties/pages/leads/leads_page.dart'
         StatusUtils;
 import 'package:inhabit_realties/constants/status_utils.dart';
 import 'package:inhabit_realties/pages/leads/lead_details_page.dart';
+import 'package:inhabit_realties/pages/widgets/horizontal_filter_bar.dart';
 
 class LeadAnalyticsPage extends StatefulWidget {
   const LeadAnalyticsPage({super.key});
@@ -250,6 +251,10 @@ class _LeadAnalyticsPageState extends State<LeadAnalyticsPage> {
   }
 
   Widget _buildTimeFrameSelector() {
+    final displayTimeFrames =
+        _timeFrames.map((tf) => _getTimeFrameDisplayName(tf)).toList();
+    final selectedIndex = _timeFrames.indexOf(_selectedTimeFrame);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -273,40 +278,12 @@ class _LeadAnalyticsPageState extends State<LeadAnalyticsPage> {
                 ),
           ),
           const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _timeFrames.map((timeFrame) {
-              final isSelected = _selectedTimeFrame == timeFrame;
-              return GestureDetector(
-                onTap: () => _onTimeFrameChanged(timeFrame),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppColors.brandPrimary
-                        : Colors.grey.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isSelected
-                          ? AppColors.brandPrimary
-                          : Colors.grey.withOpacity(0.3),
-                    ),
-                  ),
-                  child: Text(
-                    _getTimeFrameDisplayName(timeFrame),
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.grey[700],
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.normal,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
+          HorizontalFilterBar(
+            filters: displayTimeFrames,
+            selectedIndex: selectedIndex,
+            onFilterChanged: (index) {
+              _onTimeFrameChanged(_timeFrames[index]);
+            },
           ),
         ],
       ),

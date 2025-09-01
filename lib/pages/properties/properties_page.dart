@@ -12,6 +12,7 @@ import 'package:inhabit_realties/pages/properties/widgets/property_image_display
 import 'package:inhabit_realties/pages/widgets/appCard.dart';
 import 'package:inhabit_realties/pages/widgets/appSpinner.dart';
 import 'package:inhabit_realties/pages/widgets/app_search_bar.dart';
+import 'package:inhabit_realties/pages/widgets/horizontal_filter_bar.dart';
 import 'package:inhabit_realties/providers/property_page_provider.dart';
 import '../widgets/appSnackBar.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
@@ -43,6 +44,7 @@ class _PropertyPageState extends State<PropertiesPage>
   List<PropertyModel> filteredProperties = [];
   int choosedPropertyType = 0;
   int _propertyTypeIndex = 0;
+  String _selectedPropertyStatus = 'ALL';
   final ScrollController _scrollController = ScrollController();
   bool _showFavoritesOnly = false;
   Map<String, bool> _favoriteStatus = {};
@@ -86,7 +88,8 @@ class _PropertyPageState extends State<PropertiesPage>
 
   // Scroll listener for pagination
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
       if (!isLoadingMore && hasMoreData) {
         _loadMoreData();
       }
@@ -104,7 +107,7 @@ class _PropertyPageState extends State<PropertiesPage>
     try {
       // Simulate loading more data (in real app, this would be an API call)
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       // Get next batch of properties
       final nextBatch = _getNextBatch();
       if (nextBatch.isNotEmpty) {
@@ -137,16 +140,20 @@ class _PropertyPageState extends State<PropertiesPage>
   // Apply filters to the properties list
   List<PropertyModel> _applyFilters(List<PropertyModel> allProperties) {
     List<PropertyModel> filtered = List.from(allProperties);
-    
+
     if (_searchController.text.isNotEmpty) {
       final query = _searchController.text.toLowerCase();
-      filtered = filtered.where((property) =>
-          property.name.toLowerCase().contains(query) ||
-          property.description.toLowerCase().contains(query)).toList();
+      filtered = filtered
+          .where((property) =>
+              property.name.toLowerCase().contains(query) ||
+              property.description.toLowerCase().contains(query))
+          .toList();
     }
 
     if (_showFavoritesOnly) {
-      filtered = filtered.where((property) => _favoriteStatus[property.id] == true).toList();
+      filtered = filtered
+          .where((property) => _favoriteStatus[property.id] == true)
+          .toList();
     }
 
     return filtered;
@@ -243,6 +250,14 @@ class _PropertyPageState extends State<PropertiesPage>
             .toList();
       }
 
+      // Apply property status filter
+      if (_selectedPropertyStatus != 'ALL') {
+        filtered = filtered
+            .where((property) =>
+                property.propertyStatus == _selectedPropertyStatus)
+            .toList();
+      }
+
       // Apply favorites filter
       if (_showFavoritesOnly) {
         filtered = filtered
@@ -287,35 +302,28 @@ class _PropertyPageState extends State<PropertiesPage>
     _filterProperties();
   }
 
-  Widget _buildHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.only(top: 20, bottom: 10, left: 20, right: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(
-            PropertyPageProvider.mainTitle,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Find your perfect property',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: AppColors.greyColor),
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildHeader() {
+  //   return Container(
+  //     width: double.infinity,
+  //     padding: const EdgeInsets.only(top: 16, bottom: 8, left: 20, right: 20),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.center,
+  //       children: [
+  //         Text(
+  //           PropertyPageProvider.mainTitle,
+  //           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+  //                 fontWeight: FontWeight.bold,
+  //                 letterSpacing: 0.5,
+  //               ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.only(top: 10, bottom: 10),
+      padding: const EdgeInsets.only(top: 6, bottom: 6),
       child: AppSearchBar(
         controller: _searchController,
         onChanged: _handleSearch,
@@ -328,7 +336,7 @@ class _PropertyPageState extends State<PropertiesPage>
   Widget _buildPropertyTypesList() {
     if (propertyTypes.isEmpty) {
       return Container(
-        height: 65,
+        height: 40,
         alignment: Alignment.center,
         child: Text(
           'No property types available',
@@ -339,40 +347,33 @@ class _PropertyPageState extends State<PropertiesPage>
       );
     }
 
-    return SizedBox(
-      height: 65,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Row(
-            children: List.generate(
-              propertyTypes.length,
-              (index) => Padding(
-                padding: EdgeInsets.only(
-                  left: index == 0 ? 0 : 8,
-                  right: index == propertyTypes.length - 1 ? 0 : 8,
-                  top: 12,
-                  bottom: 12,
-                ),
-                child: InkWell(
-                  onTap: () {
-                    setState(() {
-                      choosedPropertyType = index;
-                      _propertyTypeIndex = index;
-                      _filterProperties();
-                    });
-                  },
-                  child: PropertyTypeContainer(
-                    isActive: index == _propertyTypeIndex,
-                    propertyType: propertyTypes[index].typeName,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
+    final filters = propertyTypes.map((type) => type.typeName).toList();
+
+    return HorizontalFilterBar(
+      filters: filters,
+      selectedIndex: _propertyTypeIndex,
+      onFilterChanged: (index) {
+        setState(() {
+          choosedPropertyType = index;
+          _propertyTypeIndex = index;
+          _filterProperties();
+        });
+      },
+    );
+  }
+
+  Widget _buildPropertyStatusFilter() {
+    final statuses = ['ALL', 'FOR SALE', 'FOR RENT', 'SOLD', 'RENTED'];
+
+    return HorizontalFilterBar(
+      filters: statuses,
+      selectedIndex: statuses.indexOf(_selectedPropertyStatus),
+      onFilterChanged: (index) {
+        setState(() {
+          _selectedPropertyStatus = statuses[index];
+          _filterProperties();
+        });
+      },
     );
   }
 
@@ -683,11 +684,12 @@ class _PropertyPageState extends State<PropertiesPage>
           : RefreshIndicator(
               onRefresh: _loadData,
               child: Column(
-                children: [
-                  _buildHeader(),
+                children: [  
+                  //_buildHeader(),
                   _buildPropertyTypesList(),
+                  _buildPropertyStatusFilter(),
                   _buildSearchBar(),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   if (filteredProperties.isEmpty)
                     Expanded(
                       child: Center(
@@ -717,13 +719,14 @@ class _PropertyPageState extends State<PropertiesPage>
                                   if (index == filteredProperties.length) {
                                     return _buildLoadingIndicator();
                                   }
-                                  
+
                                   return Padding(
                                     padding: const EdgeInsets.only(bottom: 20),
                                     child: _buildPropertyCard(context, index),
                                   );
                                 },
-                                childCount: filteredProperties.length + (hasMoreData ? 1 : 0),
+                                childCount: filteredProperties.length +
+                                    (hasMoreData ? 1 : 0),
                               ),
                             ),
                           ),

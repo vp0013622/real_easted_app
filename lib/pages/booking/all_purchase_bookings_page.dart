@@ -5,6 +5,7 @@ import 'package:inhabit_realties/constants/role_utils.dart';
 import 'package:inhabit_realties/models/booking/purchase_booking_model.dart';
 import 'package:inhabit_realties/services/booking/admin_booking_service.dart';
 import 'package:inhabit_realties/pages/widgets/loader.dart';
+import 'package:inhabit_realties/pages/widgets/horizontal_filter_bar.dart';
 import 'package:intl/intl.dart';
 
 class AllPurchaseBookingsPage extends StatefulWidget {

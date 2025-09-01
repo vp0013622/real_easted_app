@@ -25,7 +25,7 @@ class AppSearchBar extends StatelessWidget {
     const hintColor = AppColors.greyColor;
 
     return Container(
-      height: 45,
+      height: 40,
       margin: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
         color: backgroundColor,
@@ -38,7 +38,7 @@ class AppSearchBar extends StatelessWidget {
         decoration: InputDecoration(
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
-            vertical: 12,
+            vertical: 8,
           ),
           hintText: hintText,
           hintStyle: const TextStyle(color: hintColor),

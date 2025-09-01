@@ -11,6 +11,7 @@ import 'package:inhabit_realties/services/user/userService.dart';
 import 'package:inhabit_realties/pages/leads/widgets/appAppBar.dart';
 import 'package:inhabit_realties/pages/widgets/appSpinner.dart';
 import 'package:inhabit_realties/pages/widgets/app_search_bar.dart';
+import 'package:inhabit_realties/pages/widgets/horizontal_filter_bar.dart';
 import 'package:inhabit_realties/pages/leads/lead_details_page.dart';
 import 'package:inhabit_realties/pages/leads/widgets/addNewLeadButton.dart';
 import 'package:inhabit_realties/constants/status_utils.dart';
@@ -42,7 +43,7 @@ class _LeadsPageState extends State<LeadsPage> with TickerProviderStateMixin {
   bool hasMoreData = true;
   List<LeadsModel> leads = [];
   List<LeadsModel> filteredLeads = [];
-  
+
   // Pagination settings
   static const int itemsPerPage = 20;
   int currentPage = 0;
@@ -98,7 +99,8 @@ class _LeadsPageState extends State<LeadsPage> with TickerProviderStateMixin {
 
   // Scroll listener for pagination
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
       if (!isLoadingMore && hasMoreData) {
         _loadMoreData();
       }
@@ -116,7 +118,7 @@ class _LeadsPageState extends State<LeadsPage> with TickerProviderStateMixin {
     try {
       // Simulate loading more data (in real app, this would be an API call)
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       // Get next batch of leads
       final nextBatch = _getNextBatch();
       if (nextBatch.isNotEmpty) {
@@ -149,32 +151,46 @@ class _LeadsPageState extends State<LeadsPage> with TickerProviderStateMixin {
   // Apply filters to the leads list
   List<LeadsModel> _applyFilters(List<LeadsModel> allLeads) {
     List<LeadsModel> filtered = List.from(allLeads);
-    
+
     if (searchQuery.isNotEmpty) {
-      filtered = filtered.where((lead) =>
-          lead.fullName.toLowerCase().contains(searchQuery.toLowerCase()) ||
-          lead.leadEmail.toLowerCase().contains(searchQuery.toLowerCase()) ||
-          lead.leadPhoneNumber.contains(searchQuery)).toList();
+      filtered = filtered
+          .where((lead) =>
+              lead.fullName.toLowerCase().contains(searchQuery.toLowerCase()) ||
+              lead.leadEmail
+                  .toLowerCase()
+                  .contains(searchQuery.toLowerCase()) ||
+              lead.leadPhoneNumber.contains(searchQuery))
+          .toList();
     }
 
     if (selectedLeadStatus != null) {
-      filtered = filtered.where((lead) => lead.leadStatus == selectedLeadStatus).toList();
+      filtered = filtered
+          .where((lead) => lead.leadStatus == selectedLeadStatus)
+          .toList();
     }
 
     if (selectedFollowUpStatus != null) {
-      filtered = filtered.where((lead) => lead.followUpStatus == selectedFollowUpStatus).toList();
+      filtered = filtered
+          .where((lead) => lead.followUpStatus == selectedFollowUpStatus)
+          .toList();
     }
 
     if (selectedReferenceSource != null) {
-      filtered = filtered.where((lead) => lead.referanceFrom?.id == selectedReferenceSource).toList();
+      filtered = filtered
+          .where((lead) => lead.referanceFrom?.id == selectedReferenceSource)
+          .toList();
     }
 
     if (selectedAssignedBy != null) {
-      filtered = filtered.where((lead) => lead.assignedByUserId == selectedAssignedBy).toList();
+      filtered = filtered
+          .where((lead) => lead.assignedByUserId == selectedAssignedBy)
+          .toList();
     }
 
     if (selectedAssignedTo != null) {
-      filtered = filtered.where((lead) => lead.assignedToUserId == selectedAssignedTo).toList();
+      filtered = filtered
+          .where((lead) => lead.assignedToUserId == selectedAssignedTo)
+          .toList();
     }
 
     return filtered;
@@ -246,6 +262,8 @@ class _LeadsPageState extends State<LeadsPage> with TickerProviderStateMixin {
               .map((item) => LeadStatusModel.fromJson(item))
               .toList();
         });
+        // Update StatusUtils with the loaded statuses
+        StatusUtils.setLeadStatuses(leadStatuses);
       }
     } catch (e) {
       // Handle error
@@ -260,13 +278,16 @@ class _LeadsPageState extends State<LeadsPage> with TickerProviderStateMixin {
       final decodedCurrentUser = jsonDecode(currentUser);
       final userId = decodedCurrentUser['_id'] ?? '';
 
-      final response = await _leadsService.getAllFollowUpStatuses(token, userId);
+      final response =
+          await _leadsService.getAllFollowUpStatuses(token, userId);
       if (response['statusCode'] == 200 && mounted) {
         setState(() {
           followUpStatuses = (response['data'] as List)
               .map((item) => FollowUpStatusModel.fromJson(item))
               .toList();
         });
+        // Update StatusUtils with the loaded statuses
+        StatusUtils.setFollowUpStatuses(followUpStatuses);
       }
     } catch (e) {
       // Handle error
@@ -281,7 +302,8 @@ class _LeadsPageState extends State<LeadsPage> with TickerProviderStateMixin {
       final decodedCurrentUser = jsonDecode(currentUser);
       final userId = decodedCurrentUser['_id'] ?? '';
 
-      final response = await _leadsService.getAllReferenceSources(token, userId);
+      final response =
+          await _leadsService.getAllReferenceSources(token, userId);
       if (response['statusCode'] == 200 && mounted) {
         setState(() {
           referenceSources = (response['data'] as List)
@@ -447,6 +469,38 @@ class _LeadsPageState extends State<LeadsPage> with TickerProviderStateMixin {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildLeadStatusFilter() {
+    if (leadStatuses.isEmpty) return const SizedBox.shrink();
+
+    final filters = [
+      'ALL',
+      ...leadStatuses.map((status) => status.name).toList()
+    ];
+    final selectedIndex = selectedLeadStatus == null
+        ? 0
+        : leadStatuses
+                .indexWhere((status) => status.name == selectedLeadStatus) +
+            1;
+
+    return HorizontalFilterBar(
+      filters: filters,
+      selectedIndex: selectedIndex >= 0 ? selectedIndex : 0,
+      onFilterChanged: (index) {
+        if (index == 0) {
+          setState(() {
+            selectedLeadStatus = null;
+            filteredLeads = _applyFilters(leads);
+          });
+        } else {
+          setState(() {
+            selectedLeadStatus = leadStatuses[index - 1].name;
+            filteredLeads = _applyFilters(leads);
+          });
+        }
+      },
     );
   }
 
@@ -693,7 +747,7 @@ class _LeadsPageState extends State<LeadsPage> with TickerProviderStateMixin {
           if (index == filteredLeads.length) {
             return _buildLoadingIndicator();
           }
-          
+
           final lead = filteredLeads[index];
           final animationDelay = index * 0.1;
 
@@ -822,29 +876,63 @@ class _LeadsPageState extends State<LeadsPage> with TickerProviderStateMixin {
                       ),
                       const SizedBox(height: 8),
 
-                      // Follow-up Status
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: _getFollowUpStatusColor(lead.followUpStatus)
-                              .withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: _getFollowUpStatusColor(lead.followUpStatus)
-                                .withOpacity(0.3),
-                            width: 1,
-                          ),
-                        ),
-                        child: Text(
-                          _getFollowUpStatusDisplayName(lead.followUpStatus),
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                      // Follow-up Status and Designation
+                      Row(
+                        children: [
+                          // Follow-up Status
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color:
+                                  _getFollowUpStatusColor(lead.followUpStatus)
+                                      .withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color:
+                                    _getFollowUpStatusColor(lead.followUpStatus)
+                                        .withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              _getFollowUpStatusDisplayName(
+                                  lead.followUpStatus),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
                                     color: _getFollowUpStatusColor(
                                         lead.followUpStatus),
                                     fontWeight: FontWeight.w500,
                                   ),
-                        ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // Designation
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: AppColors.brandPrimary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: AppColors.brandPrimary.withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              _getDesignationDisplayName(lead.leadDesignation),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: AppColors.brandPrimary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -956,6 +1044,29 @@ class _LeadsPageState extends State<LeadsPage> with TickerProviderStateMixin {
     return StatusUtils.getLeadStatusDisplayName(status);
   }
 
+  String _getDesignationDisplayName(String designation) {
+    // Handle common designations
+    switch (designation.toUpperCase()) {
+      case 'BUYER':
+        return 'Buyer';
+      case 'SELLER':
+        return 'Seller';
+      case 'INVESTOR':
+        return 'Investor';
+      case 'TENANT':
+        return 'Tenant';
+      case 'LANDLORD':
+        return 'Landlord';
+      default:
+        // If it's an ObjectId or unknown, return a default
+        if (designation.length == 24 &&
+            RegExp(r'^[a-fA-F0-9]+$').hasMatch(designation)) {
+          return 'Unknown';
+        }
+        return designation.isNotEmpty ? designation : 'Unknown';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -1004,6 +1115,7 @@ class _LeadsPageState extends State<LeadsPage> with TickerProviderStateMixin {
         child: Column(
           children: [
             _buildHeader(),
+            _buildLeadStatusFilter(),
             if (isFilterVisible) _buildFilterSection(),
             Expanded(child: _buildLeadsList()),
           ],

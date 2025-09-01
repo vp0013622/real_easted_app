@@ -20,18 +20,12 @@ class EnvironmentConfig {
 
   static String get baseUrl {
     // 🏠 FOR LOCAL DEVELOPMENT - Uncomment the local URL and comment the production URL
-    return 'http://10.157.94.166:3001/api'; // Local development //my network
-    //return 'http://192.168.0.184:3001/api'; // Local development //office network 1 netu
+    //return 'http://10.157.94.166:3001/api'; // Local development //my network
+    //return 'http://192.168.0.176:3001/api'; // Local development //office network 1 netu
     //return 'http://192.168.0.176:3001/api'; // Local development //office network 2
 
     // 🌐 FOR PRODUCTION - Uncomment the production URL and comment the local URL
-    //////return 'https://insightwaveit-backend-p0cl.onrender.com/api'; // Production
-    //return 'https://updatedbackend-bqg8.onrender.com/api';
-
-    // Common local IPs to try:
-    // return 'http://10.0.2.2:3001/api'; // Android Emulator
-    // return 'http://localhost:3001/api'; // iOS Simulator
-    // return 'http://192.168.210.166:3001/api'; // Your local IP
+    return 'https://updatedbackend-bqg8.onrender.com/api';
   }
 
   // Add other environment-specific configurations here

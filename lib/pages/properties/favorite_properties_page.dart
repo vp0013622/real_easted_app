@@ -148,19 +148,40 @@ class _FavoritePropertiesPageState extends State<FavoritePropertiesPage>
     final textColor =
         isDark ? AppColors.darkWhiteText : AppColors.lightDarkText;
 
-    return PageContainer(
-      title: 'My Favorite Properties',
+    return Scaffold(
+      backgroundColor:
+          isDark ? AppColors.darkBackground : AppColors.lightBackground,
+      appBar: AppBar(
+        title: const Text('My Favorite Properties'),
+        backgroundColor:
+            isDark ? AppColors.darkBackground : AppColors.lightBackground,
+        elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: Icon(
+            CupertinoIcons.back,
+            color: isDark ? AppColors.darkWhiteText : AppColors.lightDarkText,
+          ),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
       drawer: const AppDrawer(),
-      children: [
-        if (_isInitialLoading)
-          _buildLoadingShimmer()
-        else if (_errorMessage != null)
-          _buildErrorWidget()
-        else if (_favoriteProperties.isEmpty)
-          _buildEmptyState()
-        else
-          _buildPropertiesList(),
-      ],
+      body: SafeArea(
+        child: ListView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          children: [
+            if (_isInitialLoading)
+              _buildLoadingShimmer()
+            else if (_errorMessage != null)
+              _buildErrorWidget()
+            else if (_favoriteProperties.isEmpty)
+              _buildEmptyState()
+            else
+              _buildPropertiesList(),
+          ],
+        ),
+      ),
     );
   }
 
